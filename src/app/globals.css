@@ -1,0 +1,376 @@
+@import "tailwindcss";
+
+/* ─── Lenis smooth scroll ────────────────────────────────────── */
+
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+:root {
+	--background: #ffffff;
+	--foreground: #171717;
+}
+
+@theme inline {
+	--color-background: var(--background);
+	--color-foreground: var(--foreground);
+	--font-sans: var(--font-geist-sans);
+	--font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		--background: #0a0a0a;
+		--foreground: #ededed;
+	}
+}
+
+body {
+	background: var(--background);
+	color: var(--foreground);
+	font-family: Arial, Helvetica, sans-serif;
+}
+
+/* ─── Global CRT / Pixel FX Overlay ──────────────────────────── */
+
+:root {
+	--crt-grain-opacity:       0.095;
+	--crt-dust-opacity:        0.13;
+	--crt-scanline-opacity:    0.10;
+	--crt-grid-opacity:        0.018;
+	--crt-top-light-opacity:   0.82;
+	--crt-vignette-opacity:    0.88;
+	--crt-sweep-opacity:       0.12;
+	--crt-distortion-opacity:  0.16;
+}
+
+.crt-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 9999;
+	pointer-events: none;
+	overflow: hidden;
+}
+
+/* A. Depth glow — very subtle centre brightening, prevents flat look */
+.crt-depth-glow {
+	position: absolute;
+	inset: 0;
+	background: radial-gradient(
+		ellipse 80% 65% at 50% 52%,
+		rgba(255,255,255,0.032)  0%,
+		rgba(255,255,255,0.014) 45%,
+		transparent             72%
+	);
+}
+
+/* B. Grain — SVG feTurbulence noise, oversized + step-translated to simulate film grain */
+.crt-grain {
+	position: absolute;
+	top:    -80%;
+	left:   -80%;
+	width:  260%;
+	height: 260%;
+	background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+	background-size: 220px 220px;
+	opacity: var(--crt-grain-opacity);
+	mix-blend-mode: overlay;
+	animation: crt-grain 1s steps(10, end) infinite;
+}
+
+@keyframes crt-grain {
+	0%   { transform: translate(  0%,  0%); }
+	10%  { transform: translate( -3%, -4%); }
+	20%  { transform: translate( -7%,  3%); }
+	30%  { transform: translate(  4%, -6%); }
+	40%  { transform: translate( -2%,  8%); }
+	50%  { transform: translate( -6%,  5%); }
+	60%  { transform: translate(  4%,  3%); }
+	70%  { transform: translate( -5%,  6%); }
+	80%  { transform: translate(  6%, -4%); }
+	90%  { transform: translate(  3%,  7%); }
+}
+
+/* C. Dust — organic uneven patches near edges, avoids obvious blobs */
+.crt-dust {
+	position: absolute;
+	inset: 0;
+	background:
+		radial-gradient(ellipse 32% 24% at   8%  12%, rgba(255,255,255,0.42) 0%, transparent 60%),
+		radial-gradient(ellipse 22% 18% at  92%   8%, rgba(255,255,255,0.34) 0%, transparent 60%),
+		radial-gradient(ellipse 18% 30% at   4%  80%, rgba(255,255,255,0.36) 0%, transparent 60%),
+		radial-gradient(ellipse 26% 20% at  96%  85%, rgba(255,255,255,0.40) 0%, transparent 60%),
+		radial-gradient(ellipse 16% 10% at  44%   4%, rgba(255,255,255,0.26) 0%, transparent 60%),
+		radial-gradient(ellipse 12% 18% at  76%  97%, rgba(255,255,255,0.28) 0%, transparent 60%),
+		radial-gradient(ellipse 14%  9% at  20%  94%, rgba(255,255,255,0.22) 0%, transparent 60%),
+		radial-gradient(ellipse  8%  6% at  60%  50%, rgba(255,255,255,0.06) 0%, transparent 70%);
+	opacity: var(--crt-dust-opacity);
+}
+
+/* D. Scanlines — fine horizontal dark stripes: 1 px on, 2 px off */
+.crt-scanlines {
+	position: absolute;
+	inset: 0;
+	background: repeating-linear-gradient(
+		to bottom,
+		transparent 0px,
+		transparent 2px,
+		black       2px,
+		black       3px
+	);
+	opacity: var(--crt-scanline-opacity);
+}
+
+/* E. Pixel grid — faint vertical + horizontal lines, felt more than seen */
+.crt-pixel-grid {
+	position: absolute;
+	inset: 0;
+	background:
+		repeating-linear-gradient(
+			to right,
+			transparent 0px,
+			transparent 2px,
+			black       2px,
+			black       3px
+		),
+		repeating-linear-gradient(
+			to bottom,
+			transparent 0px,
+			transparent 2px,
+			black       2px,
+			black       3px
+		);
+	opacity: var(--crt-grid-opacity);
+}
+
+/* F. Top light — phosphor glow from the top-centre, like an old monitor projector */
+.crt-top-light {
+	position: absolute;
+	inset: 0;
+	background: radial-gradient(
+		ellipse 65% 52% at 50% 0%,
+		rgba(240,245,255,0.20) 0%,
+		rgba(220,232,255,0.09) 28%,
+		rgba(200,215,255,0.03) 50%,
+		transparent            65%
+	);
+	opacity: var(--crt-top-light-opacity);
+}
+
+/* G. Vignette — darkens edges and corners while keeping centre readable */
+.crt-vignette {
+	position: absolute;
+	inset: 0;
+	background: radial-gradient(
+		ellipse 108% 108% at 50% 50%,
+		transparent       32%,
+		rgba(0,0,0,0.42)  72%,
+		rgba(0,0,0,0.78) 100%
+	);
+	opacity: var(--crt-vignette-opacity);
+}
+
+/* H. Edge falloff — thin dark gradients from all four sides, cinematic frame */
+.crt-edge-falloff {
+	position: absolute;
+	inset: 0;
+	background:
+		linear-gradient(to right,  rgba(0,0,0,0.22) 0%, transparent 12%),
+		linear-gradient(to left,   rgba(0,0,0,0.22) 0%, transparent 12%),
+		linear-gradient(to bottom, rgba(0,0,0,0.18) 0%, transparent 10%),
+		linear-gradient(to top,    rgba(0,0,0,0.14) 0%, transparent 10%);
+}
+
+/* ─── Phase 1: sweep glitch (active 0–48% of the 10 s loop) ───── */
+
+.crt-sweep-glitch {
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(
+		to bottom,
+		transparent              0%,
+		rgba(255,255,255,0.020) 40%,
+		rgba(255,255,255,0.048) 50%,
+		rgba(255,255,255,0.020) 60%,
+		transparent             100%
+	);
+	mix-blend-mode: screen;
+	opacity: 0;
+	animation: crtSweepPhase 10s linear infinite;
+}
+
+@keyframes crtSweepPhase {
+	/* two sweep bursts during the first half */
+	0%   { opacity: 0;                                     transform: translateY(-110%); }
+	3%   { opacity: 0;                                     transform: translateY(-110%); }
+	7%   { opacity: var(--crt-sweep-opacity);              transform: translateY( -20%); }
+	13%  { opacity: calc(var(--crt-sweep-opacity) * 0.75); transform: translateY(  35%); }
+	17%  { opacity: 0;                                     transform: translateY( 110%); }
+	24%  { opacity: 0;                                     transform: translateY(-110%); }
+	27%  { opacity: calc(var(--crt-sweep-opacity) * 0.85); transform: translateY( -15%); }
+	33%  { opacity: calc(var(--crt-sweep-opacity) * 0.55); transform: translateY(  45%); }
+	37%  { opacity: 0;                                     transform: translateY( 110%); }
+	49%  { opacity: 0;                                     transform: translateY( 200%); }
+	/* parked off-screen during phase 2 */
+	50%  { opacity: 0;                                     transform: translateY( 200%); }
+	100% { opacity: 0;                                     transform: translateY( 200%); }
+}
+
+/* ─── Phase 2: localized distortion zones (active 50–98% of the 10 s loop) ── */
+
+.crt-distortion-zone {
+	position: absolute;
+	left: 6%;
+	right: 6%;
+	height: 10vh;
+	opacity: 0;
+	pointer-events: none;
+	overflow: hidden;
+	background: linear-gradient(
+		90deg,
+		transparent                    0%,
+		rgba(255,255,255,0.025)        18%,
+		rgba(  0,120,255,0.035)        34%,
+		rgba(255,255,255,0.045)        50%,
+		rgba(255,  0,  0,0.035)        66%,
+		rgba(255,255,255,0.025)        82%,
+		transparent                   100%
+	);
+	backdrop-filter: blur(1.1px) contrast(1.18) brightness(1.05);
+	-webkit-backdrop-filter: blur(1.1px) contrast(1.18) brightness(1.05);
+	mix-blend-mode: screen;
+	mask-image: radial-gradient(ellipse 82% 68% at 50% 50%, black 38%, transparent 100%);
+	-webkit-mask-image: radial-gradient(ellipse 82% 68% at 50% 50%, black 38%, transparent 100%);
+	transform-origin: center;
+	animation: crtDistortionPhase 10s linear infinite;
+}
+
+.crt-distortion-zone::before,
+.crt-distortion-zone::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+}
+
+.crt-distortion-zone::before {
+	background: repeating-linear-gradient(
+		to bottom,
+		transparent               0px,
+		transparent               6px,
+		rgba(255,255,255,0.045)   7px,
+		transparent               9px
+	);
+	transform: translateX(-8px) scaleX(1.08);
+	opacity: 0.45;
+}
+
+.crt-distortion-zone::after {
+	background: linear-gradient(
+		90deg,
+		transparent,
+		rgba(  0,120,255,0.05),
+		transparent              45%,
+		rgba(255,  0,  0,0.045),
+		transparent
+	);
+	transform: translateX(8px);
+	opacity: 0.5;
+}
+
+.crt-distortion-top    { top: 18%; }
+.crt-distortion-middle { top: 45%; }
+.crt-distortion-bottom { top: 72%; }
+
+@keyframes crtDistortionPhase {
+	/* hidden during phase 1 */
+	0%, 49.99% {
+		opacity: 0;
+		transform: translateX(0) scaleX(1) skewX(0deg);
+		filter: none;
+	}
+
+	/* phase 2 ramp-in pause */
+	50%, 55% {
+		opacity: 0;
+		transform: translateX(0) scaleX(1) skewX(0deg);
+		filter: none;
+	}
+
+	/* burst 1 */
+	56% {
+		opacity: var(--crt-distortion-opacity);
+		transform: translateX(-10px) scaleX(1.08) skewX(-1.4deg);
+		filter: blur(0.2px);
+	}
+	58% {
+		opacity: calc(var(--crt-distortion-opacity) * 0.75);
+		transform: translateX(12px) scaleX(0.96) skewX(1.2deg);
+		filter: blur(0.8px);
+	}
+	60% {
+		opacity: var(--crt-distortion-opacity);
+		transform: translateX(-5px) scaleX(1.04) skewX(-0.6deg);
+		filter: blur(0.4px);
+	}
+	62%, 70% {
+		opacity: 0;
+		transform: translateX(0) scaleX(1) skewX(0deg);
+		filter: none;
+	}
+
+	/* burst 2 */
+	76% {
+		opacity: calc(var(--crt-distortion-opacity) * 0.75);
+		transform: translateX(8px) scaleX(1.06) skewX(1deg);
+		filter: blur(0.5px);
+	}
+	78% {
+		opacity: var(--crt-distortion-opacity);
+		transform: translateX(-12px) scaleX(0.94) skewX(-1.2deg);
+		filter: blur(0.9px);
+	}
+	80%, 100% {
+		opacity: 0;
+		transform: translateX(0) scaleX(1) skewX(0deg);
+		filter: none;
+	}
+}
+
+/* ─── Accessibility & mobile tuning ─────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+	.crt-grain,
+	.crt-sweep-glitch,
+	.crt-distortion-zone {
+		animation: none !important;
+	}
+
+	.crt-sweep-glitch,
+	.crt-distortion-zone {
+		opacity: 0 !important;
+	}
+}
+
+@media (max-width: 768px) {
+	:root {
+		--crt-grain-opacity:       0.075;
+		--crt-dust-opacity:        0.10;
+		--crt-scanline-opacity:    0.075;
+		--crt-grid-opacity:        0.01;
+		--crt-distortion-opacity:  0.10;
+	}
+}
