@@ -1,10 +1,13 @@
 
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/dist/ScrollTrigger';
+
+const useIsomorphicLayoutEffect =
+  typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
 type Industry =
   | 'fintech'
@@ -161,7 +164,7 @@ export default function CoinOrbitHero() {
   const specializationActionsRef = useRef<HTMLDivElement | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
 
     const container = canvasContainerRef.current;
@@ -856,12 +859,16 @@ export default function CoinOrbitHero() {
       (window as Window).addEventListener('resize', onResize);
     }
 
-    loadingTimer = setTimeout(() => setIsLoading(false), 180);
+    loadingTimer = setTimeout(() => {
+      setIsLoading(false);
+      requestAnimationFrame(() => {
+        ScrollTrigger.refresh();
+      });
+    }, 180);
 
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const isMobile = window.matchMedia('(max-width: 640px)').matches;
-    const isVerySmall = window.matchMedia('(max-width: 480px)').matches;
-    const shouldPin = !prefersReducedMotion && !isVerySmall;
+    const shouldPin = !prefersReducedMotion;
 
     if (!prefersReducedMotion && sectionRef.current) {
       const scrollEnd = isMobile ? '+=210%' : '+=260%';
@@ -877,7 +884,7 @@ export default function CoinOrbitHero() {
 
       gsapCtx = gsap.context(() => {
         gsap.set(specializationInnerRef.current, {
-          opacity: 0,
+          autoAlpha: 0,
           y: isMobile ? 44 : 72,
           scale: 0.975,
           filter: revealBlur,
@@ -889,7 +896,7 @@ export default function CoinOrbitHero() {
           specializationHeadingRef.current,
           specializationTextRef.current,
           specializationActionsRef.current,
-        ], { opacity: 0, y: isMobile ? 18 : 26 });
+        ], { autoAlpha: 0, y: isMobile ? 18 : 26 });
 
         gsap.set(specializationActionsRef.current, { pointerEvents: 'none' });
 
@@ -898,7 +905,7 @@ export default function CoinOrbitHero() {
             trigger: sectionRef.current,
             start: 'top top',
             end: scrollEnd,
-            scrub: 0.9,
+            scrub: isMobile ? 0.55 : 0.9,
             pin: shouldPin,
             anticipatePin: 1,
             invalidateOnRefresh: true,
@@ -924,12 +931,16 @@ export default function CoinOrbitHero() {
           .to(brandMarkRef.current, { opacity: 0, y: -18, scale: 0.96, duration: 0.24, ease: 'none' }, 0.34)
 
           // Phase C — specialization reveal
-          .to(specializationInnerRef.current, { opacity: 1, y: 0, scale: 1, filter: 'blur(0px)', pointerEvents: 'auto', duration: 0.30, ease: 'none' }, 0.68)
-          .to(specializationKickerRef.current, { opacity: 1, y: 0, duration: 0.14, ease: 'none' }, 0.70)
-          .to(specializationHeadingRef.current, { opacity: 1, y: 0, duration: 0.22, ease: 'none' }, 0.74)
-          .to(specializationTextRef.current, { opacity: 1, y: 0, duration: 0.18, ease: 'none' }, 0.84)
-          .to(specializationActionsRef.current, { opacity: 1, y: 0, pointerEvents: 'auto', duration: 0.16, ease: 'none' }, 0.91);
+          .to(specializationInnerRef.current, { autoAlpha: 1, y: 0, scale: 1, filter: 'blur(0px)', pointerEvents: 'auto', duration: 0.30, ease: 'none' }, 0.68)
+          .to(specializationKickerRef.current, { autoAlpha: 1, y: 0, duration: 0.14, ease: 'none' }, 0.70)
+          .to(specializationHeadingRef.current, { autoAlpha: 1, y: 0, duration: 0.22, ease: 'none' }, 0.74)
+          .to(specializationTextRef.current, { autoAlpha: 1, y: 0, duration: 0.18, ease: 'none' }, 0.84)
+          .to(specializationActionsRef.current, { autoAlpha: 1, y: 0, pointerEvents: 'auto', duration: 0.16, ease: 'none' }, 0.91);
       }, sectionRef);
+
+      requestAnimationFrame(() => {
+        ScrollTrigger.refresh();
+      });
     }
 
     lastFrameTime = performance.now();
@@ -1178,6 +1189,11 @@ export default function CoinOrbitHero() {
           justify-content: center;
           text-align: center;
           will-change: opacity, transform, filter;
+          opacity: 0;
+          visibility: hidden;
+          pointer-events: none;
+          transform: translateY(72px) scale(0.975);
+          filter: blur(22px);
         }
 
         .brandMark {
@@ -1309,6 +1325,13 @@ export default function CoinOrbitHero() {
         .specializationContent p,
         .specializationActions {
           will-change: opacity, transform;
+        }
+
+        .specializationKicker,
+        .specializationContent h2,
+        .specializationContent p,
+        .specializationActions {
+          opacity: 0;
         }
 
         .specializationKicker {
@@ -1585,6 +1608,7 @@ export default function CoinOrbitHero() {
           .coinHero {
             height: 100svh;
             min-height: 100svh;
+            overflow: hidden;
             align-items: stretch;
           }
 
@@ -1596,9 +1620,12 @@ export default function CoinOrbitHero() {
           }
 
           .canvasContainer {
-            width: 132vw;
+            inset: 0;
+            width: 100%;
+            height: 100%;
             max-width: none;
-            aspect-ratio: 1 / 1;
+            aspect-ratio: auto;
+            transform: none;
             overflow: visible;
           }
 
@@ -1631,6 +1658,11 @@ export default function CoinOrbitHero() {
           .specializationContent {
             top: 50%;
             width: min(90vw, 430px);
+          }
+
+          .specializationInner {
+            transform: translateY(44px) scale(0.975);
+            filter: blur(8px);
           }
 
           .specializationKicker {

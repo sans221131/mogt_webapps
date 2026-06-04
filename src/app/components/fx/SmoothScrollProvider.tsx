@@ -14,17 +14,23 @@ export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
     if (typeof window === 'undefined') return;
 
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (prefersReducedMotion) return;
+    const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
 
     gsap.registerPlugin(ScrollTrigger);
 
+    // On touch/mobile devices, let ScrollTrigger use native scroll.
+    // Lenis touch smoothing interferes with pinned ScrollTrigger sections.
+    if (prefersReducedMotion || isTouchDevice) {
+      requestAnimationFrame(() => ScrollTrigger.refresh());
+      return;
+    }
+
     const lenis = new Lenis({
-      duration: 1.1,
+      duration: 1.0,
       easing: (t) => 1 - Math.pow(1 - t, 3),
       smoothWheel: true,
       syncTouch: false,
       wheelMultiplier: 0.85,
-      touchMultiplier: 0.9,
     });
 
     lenis.on('scroll', ScrollTrigger.update);
@@ -36,7 +42,7 @@ export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
     gsap.ticker.add(update);
     gsap.ticker.lagSmoothing(0);
 
-    ScrollTrigger.refresh();
+    requestAnimationFrame(() => ScrollTrigger.refresh());
 
     return () => {
       lenis.off('scroll', ScrollTrigger.update);

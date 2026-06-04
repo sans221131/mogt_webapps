@@ -16,7 +16,7 @@ html.lenis body {
 }
 
 .lenis.lenis-stopped {
-  overflow: hidden;
+  overflow: clip;
 }
 
 :root {
