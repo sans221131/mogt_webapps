@@ -167,6 +167,10 @@ export default function CoinOrbitHero() {
   useIsomorphicLayoutEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
 
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+
     const container = canvasContainerRef.current;
     if (!container) return;
 
@@ -870,8 +874,15 @@ export default function CoinOrbitHero() {
     const isMobile = window.matchMedia('(max-width: 640px)').matches;
     const shouldPin = !prefersReducedMotion;
 
+    if (isMobile && !prefersReducedMotion) {
+      ScrollTrigger.normalizeScroll(true);
+    }
+
     if (!prefersReducedMotion && sectionRef.current) {
-      const scrollEnd = isMobile ? '+=210%' : '+=260%';
+      const scrollStart = isMobile ? 0 : 'top top';
+      const scrollEnd = isMobile
+        ? () => `+=${Math.round(window.innerHeight * 2.1)}`
+        : () => `+=${Math.round(window.innerHeight * 2.6)}`;
       const revealBlur = isMobile ? 'blur(8px)' : 'blur(22px)';
 
       const transitionTargets = isMobile
@@ -903,7 +914,7 @@ export default function CoinOrbitHero() {
         scrollTimeline = gsap.timeline({
           scrollTrigger: {
             trigger: sectionRef.current,
-            start: 'top top',
+            start: scrollStart,
             end: scrollEnd,
             scrub: isMobile ? 0.55 : 0.9,
             pin: shouldPin,
