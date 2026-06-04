@@ -230,8 +230,8 @@ export default function CoinOrbitHero() {
       if (isMobileLayout()) {
         return {
           orbitRadiusX: 2.35,
-          orbitRadiusY: 3.95,
-          coinScale: 1.75,
+          orbitRadiusY: 5,
+          coinScale: 1.5,
           worldDiameter: 5.55,
           coverage: 0.78,
           opacityMin: 0.42,
