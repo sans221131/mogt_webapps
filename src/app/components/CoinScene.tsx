@@ -229,9 +229,9 @@ export default function CoinOrbitHero() {
     const getLayoutSettings = (): LayoutSettings => {
       if (isMobileLayout()) {
         return {
-          orbitRadiusX: 2.5,
-          orbitRadiusY: 4,
-          coinScale: 1.75,
+          orbitRadiusX: 3,
+          orbitRadiusY: 7,
+          coinScale: 2.5,
           worldDiameter: 6.3,
           coverage: 0.72,
           opacityMin: 0.42,
