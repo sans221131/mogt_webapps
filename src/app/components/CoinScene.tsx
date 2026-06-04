@@ -229,13 +229,13 @@ export default function CoinOrbitHero() {
     const getLayoutSettings = (): LayoutSettings => {
       if (isMobileLayout()) {
         return {
-          orbitRadiusX: 3,
-          orbitRadiusY: 7,
-          coinScale: 2.5,
-          worldDiameter: 6.3,
-          coverage: 0.72,
+          orbitRadiusX: 2.35,
+          orbitRadiusY: 3.95,
+          coinScale: 1.75,
+          worldDiameter: 5.55,
+          coverage: 0.78,
           opacityMin: 0.42,
-          opacityMax: 0.9,
+          opacityMax: 0.92,
         };
       }
 
@@ -742,7 +742,12 @@ export default function CoinOrbitHero() {
         const x = Math.cos(angle) * zoomRadiusX * exitMultiplier;
         const y = Math.sin(angle) * zoomRadiusY * exitMultiplier;
         const depth = (Math.sin(angle) + 1) / 2;
-        const z = THREE.MathUtils.lerp(-scrollState.depthSpread, scrollState.depthSpread, depth);
+        const baseZ = THREE.MathUtils.lerp(-scrollState.depthSpread * 0.55, scrollState.depthSpread, depth);
+        const forwardZ = scrollState.forwardPush * scrollState.progress * THREE.MathUtils.lerp(0.35, 1, depth);
+        const unclampedZ = baseZ + forwardZ;
+        const nearPadding = isMobileLayout() ? 0.48 : 0.72;
+        const safeMaxZ = Math.max(0, camera.position.z - nearPadding);
+        const z = Math.min(unclampedZ, safeMaxZ);
 
         const zoomOpacityBoost = THREE.MathUtils.lerp(0, 0.08, scrollState.progress);
         const baseOpacity = THREE.MathUtils.clamp(
@@ -759,7 +764,9 @@ export default function CoinOrbitHero() {
         coin.position.set(x, y, z);
         coin.userData.currentScale += (coin.userData.targetScale - coin.userData.currentScale) * 0.12;
 
-        const depthScale = THREE.MathUtils.lerp(0.94, 1.12, depth);
+        const depthScale = isMobileLayout()
+          ? THREE.MathUtils.lerp(0.90, 1.34, depth)
+          : THREE.MathUtils.lerp(0.94, 1.12, depth);
         coin.scale.setScalar(coin.userData.currentScale * layout.coinScale * scrollState.coinScaleBoost * depthScale);
 
         // Tangent = direction the token is moving along the orbit.
@@ -872,6 +879,8 @@ export default function CoinOrbitHero() {
 
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const isMobile = window.matchMedia('(max-width: 640px)').matches;
+    const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
+    const useMobileScrollTuning = isMobile || (isTouchDevice && window.innerWidth < 900);
     const shouldPin = !prefersReducedMotion;
 
     if (isMobile && !prefersReducedMotion) {
@@ -885,13 +894,39 @@ export default function CoinOrbitHero() {
         : () => `+=${Math.round(window.innerHeight * 2.6)}`;
       const revealBlur = isMobile ? 'blur(8px)' : 'blur(22px)';
 
-      const transitionTargets = isMobile
-        ? { progress: 0.72, radiusBoost: 1.08, coinScaleBoost: 1.32, cameraPush: 0.84, orbitSpeedBoost: 0.28, depthSpread: 0.22, forwardPush: 0.42, faceForward: 0.64, exitSpread: 0.06 }
-        : { progress: 0.72, radiusBoost: 1.16, coinScaleBoost: 1.55, cameraPush: 0.74, orbitSpeedBoost: 0.24, depthSpread: 0.38, forwardPush: 0.68, faceForward: 0.72, exitSpread: 0.12 };
+      const transitionEnd = useMobileScrollTuning ? 0.64 : 0.66;
+      const canvasFadeStart = useMobileScrollTuning ? 0.64 : 0.52;
+      const canvasFadeDuration = useMobileScrollTuning ? 0.16 : 0.18;
+      const specializationRevealStart = useMobileScrollTuning ? 0.72 : 0.68;
 
-      const finalTargets = isMobile
-        ? { progress: 1, radiusBoost: 1.18, coinScaleBoost: 1.52, cameraPush: 0.80, orbitSpeedBoost: 0.16, depthSpread: 0.32, forwardPush: 0.58, faceForward: 0.76, exitSpread: 0.32 }
-        : { progress: 1, radiusBoost: 1.22, coinScaleBoost: 1.55, cameraPush: 0.76, orbitSpeedBoost: 0.14, depthSpread: 0.28, forwardPush: 0.42, faceForward: 0.78, exitSpread: 0.18 };
+      const mobileTransitionTargets = {
+        progress: 0.68, radiusBoost: 1.08, coinScaleBoost: 1.85, cameraPush: 0.70,
+        orbitSpeedBoost: 0.18, depthSpread: 0.52, forwardPush: 0.92, faceForward: 0.82,
+        exitSpread: 0.06, coinFade: 0,
+      };
+
+      const mobileFinalTargets = {
+        progress: 1, radiusBoost: 1.16, coinScaleBoost: 2.28, cameraPush: 0.64,
+        orbitSpeedBoost: 0.10, depthSpread: 0.72, forwardPush: 1.28, faceForward: 0.92,
+        exitSpread: 0.18, coinFade: 1,
+      };
+
+      const desktopTransitionTargets = {
+        progress: 0.72, radiusBoost: 1.16, coinScaleBoost: 1.55, cameraPush: 0.74,
+        orbitSpeedBoost: 0.24, depthSpread: 0.38, forwardPush: 0.68, faceForward: 0.72, exitSpread: 0.12,
+      };
+
+      const desktopFinalTargets = {
+        progress: 1, radiusBoost: 1.22, coinScaleBoost: 1.55, cameraPush: 0.76,
+        orbitSpeedBoost: 0.14, depthSpread: 0.28, forwardPush: 0.42, faceForward: 0.78, exitSpread: 0.18,
+      };
+
+      const transitionTargets = useMobileScrollTuning ? mobileTransitionTargets : desktopTransitionTargets;
+      const finalTargets = useMobileScrollTuning ? mobileFinalTargets : desktopFinalTargets;
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Coin scroll tuning', { isMobile, isTouchDevice, useMobileScrollTuning, transitionTargets, finalTargets });
+      }
 
       gsapCtx = gsap.context(() => {
         gsap.set(specializationInnerRef.current, {
@@ -925,28 +960,30 @@ export default function CoinOrbitHero() {
         });
 
         scrollTimeline
-          // Phase B — two-step coin zoom
-          .to(scrollStateTarget, { ...transitionTargets, ease: 'none', duration: 0.66 }, 0)
-          .to(scrollStateTarget, { ...finalTargets, ease: 'none', duration: 0.34 }, 0.66)
+          // Coin zoom: two-stage
+          .to(scrollStateTarget, { ...transitionTargets, ease: 'none', duration: transitionEnd }, 0)
+          .to(scrollStateTarget, { ...finalTargets, ease: 'none', duration: 1 - transitionEnd }, transitionEnd)
 
-          // Coin fade-out: 48%→64%
-          .to(scrollStateTarget, { coinFade: 1, ease: 'none', duration: 0.16 }, 0.48)
+          // Canvas container fade (mobile: 64%→80%, desktop: 52%→70%)
+          .to(canvasContainerRef.current, { opacity: 0, pointerEvents: 'none', ease: 'none', duration: canvasFadeDuration }, canvasFadeStart)
 
-          // Canvas container fade: 52%→70%
-          .to(canvasContainerRef.current, { opacity: 0, pointerEvents: 'none', ease: 'none', duration: 0.18 }, 0.52)
-
-          // Phase A — original hero fade
+          // Original hero fade
           .to(ctaRef.current, { opacity: 0, y: -12, scale: 0.96, pointerEvents: 'none', duration: 0.18, ease: 'none' }, 0.08)
           .to(subtitleRef.current, { opacity: 0, y: -16, scale: 0.97, duration: 0.22, ease: 'none' }, 0.18)
           .to(headingRef.current, { opacity: 0, y: -22, scale: 0.975, duration: 0.28, ease: 'none' }, 0.28)
           .to(brandMarkRef.current, { opacity: 0, y: -18, scale: 0.96, duration: 0.24, ease: 'none' }, 0.34)
 
-          // Phase C — specialization reveal
-          .to(specializationInnerRef.current, { autoAlpha: 1, y: 0, scale: 1, filter: 'blur(0px)', pointerEvents: 'auto', duration: 0.30, ease: 'none' }, 0.68)
-          .to(specializationKickerRef.current, { autoAlpha: 1, y: 0, duration: 0.14, ease: 'none' }, 0.70)
-          .to(specializationHeadingRef.current, { autoAlpha: 1, y: 0, duration: 0.22, ease: 'none' }, 0.74)
-          .to(specializationTextRef.current, { autoAlpha: 1, y: 0, duration: 0.18, ease: 'none' }, 0.84)
-          .to(specializationActionsRef.current, { autoAlpha: 1, y: 0, pointerEvents: 'auto', duration: 0.16, ease: 'none' }, 0.91);
+          // Specialization reveal
+          .to(specializationInnerRef.current, { autoAlpha: 1, y: 0, scale: 1, filter: 'blur(0px)', pointerEvents: 'auto', duration: 0.30, ease: 'none' }, specializationRevealStart)
+          .to(specializationKickerRef.current, { autoAlpha: 1, y: 0, duration: 0.14, ease: 'none' }, specializationRevealStart + 0.02)
+          .to(specializationHeadingRef.current, { autoAlpha: 1, y: 0, duration: 0.22, ease: 'none' }, specializationRevealStart + 0.06)
+          .to(specializationTextRef.current, { autoAlpha: 1, y: 0, duration: 0.18, ease: 'none' }, specializationRevealStart + 0.16)
+          .to(specializationActionsRef.current, { autoAlpha: 1, y: 0, pointerEvents: 'auto', duration: 0.16, ease: 'none' }, specializationRevealStart + 0.23);
+
+        // Desktop-only explicit coin fade; mobile uses coinFade baked into mobileFinalTargets
+        if (!useMobileScrollTuning) {
+          scrollTimeline.to(scrollStateTarget, { coinFade: 1, ease: 'none', duration: 0.16 }, 0.48);
+        }
       }, sectionRef);
 
       requestAnimationFrame(() => {
