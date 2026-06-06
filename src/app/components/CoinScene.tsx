@@ -1072,7 +1072,7 @@ export default function CoinOrbitHero() {
     if (!prefersReducedMotion && sectionRef.current) {
       const scrollStart = isMobile ? 0 : 'top top';
       const scrollEnd = isMobile
-        ? () => `+=${Math.round(window.innerHeight * 6.6)}`
+        ? () => `+=${Math.round(window.innerHeight * 8.6)}`
         : () => `+=${Math.round(window.innerHeight * 6.4)}`;
 
       const mobileScrollTargets = {
