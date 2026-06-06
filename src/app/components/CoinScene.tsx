@@ -7,6 +7,9 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/dist/ScrollTrigger';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
+import SelectedWorkVault from './SelectedWorkVault';
+import ProcessBlueprintSection from './ProcessBlueprintSection';
+import TrustEngineSection from './TrustEngineSection';
 
 const useIsomorphicLayoutEffect =
   typeof window !== 'undefined' ? useLayoutEffect : useEffect;
@@ -162,22 +165,174 @@ const OVERLAY_PANELS: Array<{ label: string; title: string; text: string; varian
     text: 'Digital products for high-trust, data-heavy, operational industries.',
     variant: 'systemsIndex',
   },
-  { label: 'B', title: 'Section B', text: 'Placeholder section B' },
-  { label: 'C', title: 'Section C', text: 'Placeholder section C' },
-  { label: 'D', title: 'Section D', text: 'Placeholder section D' },
+  { label: 'B', title: 'Selected Work', text: 'Curated project archive.', variant: 'selectedWork' },
+  { label: 'C', title: 'System Assembly', text: 'Blueprint process sequence.', variant: 'process' },
+  { label: 'D', title: 'Trust Engine', text: 'Why teams choose us.', variant: 'trustEngine' },
 ];
 
-const SYSTEM_INDUSTRIES = [
-  'Financial Systems',
-  'Health Infrastructure',
-  'Commerce Platforms',
-  'Learning Systems',
-  'Logistics Ops',
-  'Property Platforms',
-  'Mobility Interfaces',
-  'Travel Infrastructure',
-  'Content Systems',
-  'Software Platforms',
+type IndustryInsight = {
+  id: string;
+  index: string;
+  label: string;
+  title: string;
+  summary: string;
+  services: string[];
+  interfaceTypes: string[];
+  metrics: Array<{ label: string; value: string; bar: number }>;
+  signal: string;
+};
+
+const SYSTEM_INDUSTRIES: IndustryInsight[] = [
+  {
+    id: 'fintech',
+    index: '01',
+    label: 'Financial Systems',
+    title: 'Fintech Interface Systems',
+    summary: 'Interfaces for capital movement, risk visibility, trading workflows, subscriptions, and trust-heavy financial decisions.',
+    services: ['Neo banking UX', 'Trading dashboards', 'Investment workflows', 'KYC onboarding'],
+    interfaceTypes: ['Mobile banking', 'Broker dashboards', 'Portfolio views'],
+    metrics: [
+      { label: 'Trust-critical flows', value: 'High', bar: 92 },
+      { label: 'Data density', value: 'Very High', bar: 88 },
+      { label: 'Decision speed', value: 'Fast', bar: 82 },
+    ],
+    signal: 'Designed for clarity under risk, regulation, and fast user decisions.',
+  },
+  {
+    id: 'healthcare',
+    index: '02',
+    label: 'Health Infrastructure',
+    title: 'Healthcare Interface Systems',
+    summary: 'Patient, provider, and operations interfaces where accessibility, clarity, and low-friction task completion matter.',
+    services: ['Patient portals', 'Appointment flows', 'Clinical dashboards', 'Care admin tools'],
+    interfaceTypes: ['Patient apps', 'Staff dashboards', 'Booking systems'],
+    metrics: [
+      { label: 'Accessibility need', value: 'Critical', bar: 95 },
+      { label: 'Task sensitivity', value: 'High', bar: 86 },
+      { label: 'Admin complexity', value: 'High', bar: 80 },
+    ],
+    signal: 'Designed for trust, comprehension, accessibility, and reduced operational friction.',
+  },
+  {
+    id: 'ecommerce',
+    index: '03',
+    label: 'Commerce Platforms',
+    title: 'Commerce Interface Systems',
+    summary: 'Conversion-focused product experiences with clean discovery, checkout, account, and seller-side operations.',
+    services: ['Product discovery', 'Checkout UX', 'Seller dashboards', 'Retention flows'],
+    interfaceTypes: ['Storefronts', 'Checkout systems', 'Merchant tools'],
+    metrics: [
+      { label: 'Conversion pressure', value: 'High', bar: 90 },
+      { label: 'Journey complexity', value: 'Medium', bar: 72 },
+      { label: 'Optimization potential', value: 'High', bar: 87 },
+    ],
+    signal: 'Designed for speed, confidence, and fewer dead ends across the buying journey.',
+  },
+  {
+    id: 'edtech',
+    index: '04',
+    label: 'Learning Systems',
+    title: 'EdTech Interface Systems',
+    summary: 'Learning platforms, dashboards, and course experiences that make progress, content, and outcomes easier to understand.',
+    services: ['Learning apps', 'Course dashboards', 'Student portals', 'Assessment flows'],
+    interfaceTypes: ['LMS interfaces', 'Progress dashboards', 'Content platforms'],
+    metrics: [
+      { label: 'Engagement need', value: 'High', bar: 84 },
+      { label: 'Progress visibility', value: 'Critical', bar: 91 },
+      { label: 'Content structure', value: 'High', bar: 79 },
+    ],
+    signal: 'Designed to make learning paths clear, measurable, and less exhausting.',
+  },
+  {
+    id: 'logistics',
+    index: '05',
+    label: 'Logistics Ops',
+    title: 'Logistics Interface Systems',
+    summary: 'Operational dashboards and tracking interfaces for fleets, routing, delivery visibility, and real-time coordination.',
+    services: ['Fleet dashboards', 'Tracking systems', 'Ops panels', 'Route planning UX'],
+    interfaceTypes: ['Control rooms', 'Driver apps', 'Shipment dashboards'],
+    metrics: [
+      { label: 'Real-time pressure', value: 'Very High', bar: 93 },
+      { label: 'Operational density', value: 'High', bar: 88 },
+      { label: 'Error cost', value: 'High', bar: 85 },
+    ],
+    signal: 'Designed for live decisions, fewer blind spots, and operational control.',
+  },
+  {
+    id: 'realEstate',
+    index: '06',
+    label: 'Property Platforms',
+    title: 'Real Estate Interface Systems',
+    summary: 'Property search, broker tools, listing workflows, lead systems, and dashboards for high-intent property decisions.',
+    services: ['Listing UX', 'Broker dashboards', 'Lead flows', 'Property comparison'],
+    interfaceTypes: ['Marketplace UX', 'CRM dashboards', 'Listing platforms'],
+    metrics: [
+      { label: 'Search complexity', value: 'High', bar: 82 },
+      { label: 'Lead quality need', value: 'High', bar: 86 },
+      { label: 'Trust requirement', value: 'High', bar: 78 },
+    ],
+    signal: 'Designed for considered decisions, comparison, trust, and lead conversion.',
+  },
+  {
+    id: 'automotive',
+    index: '07',
+    label: 'Mobility Interfaces',
+    title: 'Automotive Interface Systems',
+    summary: 'Booking, dealership, vehicle management, and mobility service interfaces across web and mobile products.',
+    services: ['Booking flows', 'Dealer dashboards', 'Vehicle apps', 'Service UX'],
+    interfaceTypes: ['Mobility apps', 'Dealer systems', 'Service platforms'],
+    metrics: [
+      { label: 'Process complexity', value: 'High', bar: 81 },
+      { label: 'Mobile usage', value: 'High', bar: 84 },
+      { label: 'Service dependency', value: 'Medium', bar: 70 },
+    ],
+    signal: 'Designed for smooth ownership, booking, and service journeys.',
+  },
+  {
+    id: 'travel',
+    index: '08',
+    label: 'Travel Infrastructure',
+    title: 'Travel Interface Systems',
+    summary: 'Booking, itinerary, vendor, and operations interfaces where timing, trust, and clarity shape the full journey.',
+    services: ['Booking systems', 'Itinerary UX', 'Vendor dashboards', 'Search flows'],
+    interfaceTypes: ['Travel apps', 'Booking engines', 'Partner portals'],
+    metrics: [
+      { label: 'Decision anxiety', value: 'High', bar: 80 },
+      { label: 'Search depth', value: 'High', bar: 87 },
+      { label: 'Timing sensitivity', value: 'High', bar: 83 },
+    ],
+    signal: 'Designed for confident planning, clean comparison, and fewer booking doubts.',
+  },
+  {
+    id: 'media',
+    index: '09',
+    label: 'Content Systems',
+    title: 'Media Interface Systems',
+    summary: 'Creator tools, publishing systems, asset workflows, editorial dashboards, and monetization-focused content platforms.',
+    services: ['Creator tools', 'Publishing workflows', 'Asset dashboards', 'Content ops UX'],
+    interfaceTypes: ['CMS interfaces', 'Media libraries', 'Creator dashboards'],
+    metrics: [
+      { label: 'Workflow volume', value: 'High', bar: 86 },
+      { label: 'Asset complexity', value: 'High', bar: 88 },
+      { label: 'Publishing speed', value: 'Fast', bar: 79 },
+    ],
+    signal: 'Designed for content velocity, asset clarity, and editorial control.',
+  },
+  {
+    id: 'saas',
+    index: '10',
+    label: 'Software Platforms',
+    title: 'SaaS Interface Systems',
+    summary: 'Product dashboards, onboarding flows, admin systems, design systems, and complex web app interfaces.',
+    services: ['SaaS dashboards', 'Onboarding flows', 'Admin panels', 'Design systems'],
+    interfaceTypes: ['Web apps', 'Admin consoles', 'Analytics dashboards'],
+    metrics: [
+      { label: 'Feature complexity', value: 'Very High', bar: 90 },
+      { label: 'Onboarding impact', value: 'High', bar: 84 },
+      { label: 'System scalability', value: 'Critical', bar: 92 },
+    ],
+    signal: 'Designed for clarity, adoption, scalability, and long-term product growth.',
+  },
 ];
 
 const SYSTEM_CAPABILITIES = [
@@ -214,7 +369,20 @@ export default function CoinOrbitHero() {
   const systemsIndustryMatrixRef = useRef<HTMLDivElement | null>(null);
   const systemsCapabilitiesRef = useRef<HTMLDivElement | null>(null);
   const systemsIndexLogoRef = useRef<HTMLDivElement | null>(null);
+  const systemsInsightPanelRef = useRef<HTMLDivElement | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeIndustryId, setActiveIndustryId] = useState<string | null>(null);
+  const [isIndustryOverlayOpen, setIsIndustryOverlayOpen] = useState(false);
+  const activeIndustry = SYSTEM_INDUSTRIES.find((industry) => industry.id === activeIndustryId) ?? null;
+
+  const openIndustryOverlay = (industryId: string) => {
+    setActiveIndustryId(industryId);
+    setIsIndustryOverlayOpen(true);
+  };
+
+  const closeIndustryOverlay = () => {
+    setIsIndustryOverlayOpen(false);
+  };
 
   const setSpecializationHeadingLineRef = (element: HTMLSpanElement | null, index: number) => {
     if (element) specializationHeadingLineRefs.current[index] = element;
@@ -1072,8 +1240,8 @@ export default function CoinOrbitHero() {
     if (!prefersReducedMotion && sectionRef.current) {
       const scrollStart = isMobile ? 0 : 'top top';
       const scrollEnd = isMobile
-        ? () => `+=${Math.round(window.innerHeight * 8.6)}`
-        : () => `+=${Math.round(window.innerHeight * 6.4)}`;
+        ? () => `+=${Math.round(window.innerHeight * 13.0)}`
+        : () => `+=${Math.round(window.innerHeight * 9.5)}`;
 
       const mobileScrollTargets = {
         progress: 1,
@@ -1166,6 +1334,13 @@ export default function CoinOrbitHero() {
           filter: isMobile ? 'blur(10px)' : 'blur(16px)',
         });
 
+        // Section B (Selected Work vault) — heading + cards stagger in.
+        gsap.set('.vaultReveal', {
+          autoAlpha: 0,
+          y: isMobile ? 30 : 42,
+          filter: isMobile ? 'blur(12px)' : 'blur(18px)',
+        });
+
         gsap.set(sideProgressFillRef.current, {
           scaleY: 0,
           transformOrigin: 'top',
@@ -1180,9 +1355,9 @@ export default function CoinOrbitHero() {
         const sectionAIntroAt = sectionAEnterAt + 0.18;
         const sectionAMatrixAt = sectionAEnterAt + 0.58;
         const sectionACapabilitiesAt = sectionAEnterAt + 0.98;
-        const sectionAHoldUntil = sectionAEnterAt + 1.65;
-        const sectionBEnterAt = sectionAHoldUntil + 0.25;
-        const panelStep = 0.9;
+        const sectionAHoldUntil = sectionAEnterAt + 2.15;
+        const sectionBEnterAt = sectionAHoldUntil + 0.3;
+        const panelStep = 2.2;
 
         scrollTimeline = gsap.timeline({
           scrollTrigger: {
@@ -1218,6 +1393,22 @@ export default function CoinOrbitHero() {
                   tick.classList.remove('isActive');
                 }
               });
+
+              // Drive ProcessBlueprintSection step via scroll position
+              const cPanelEnterAt = sectionBEnterAt + panelStep;
+              if (timePos >= cPanelEnterAt && timePos <= cPanelEnterAt + 1.6) {
+                const stepRaw = Math.max(0, Math.min(1, (timePos - cPanelEnterAt) / 1.4));
+                const bpStep = Math.min(5, Math.floor(stepRaw * 6));
+                window.dispatchEvent(new CustomEvent('blueprintStep', { detail: bpStep }));
+              }
+
+              // Drive TrustEngineSection signal via scroll position
+              const dPanelEnterAt = sectionBEnterAt + 2 * panelStep;
+              if (timePos >= dPanelEnterAt) {
+                const sigRaw = Math.max(0, Math.min(1, (timePos - dPanelEnterAt) / 1.4));
+                const sigIdx = Math.min(5, Math.floor(sigRaw * 6));
+                window.dispatchEvent(new CustomEvent('trustSignal', { detail: sigIdx }));
+              }
             },
           },
         });
@@ -1280,7 +1471,7 @@ export default function CoinOrbitHero() {
             return { enterAt: sectionAEnterAt, exitAt: sectionBEnterAt - 0.22 };
           }
           const enterAt = sectionBEnterAt + (index - 1) * panelStep;
-          return { enterAt, exitAt: enterAt + 0.62 };
+          return { enterAt, exitAt: enterAt + 1.6 };
         });
 
         overlayPanels.forEach((panel, index) => {
@@ -1312,6 +1503,16 @@ export default function CoinOrbitHero() {
             );
           }
         });
+
+        // Stagger the Selected Work heading + cards in as Section B reveals.
+        scrollTimeline?.to('.vaultReveal', {
+          autoAlpha: 1,
+          y: 0,
+          filter: 'blur(0px)',
+          duration: 0.5,
+          stagger: 0.085,
+          ease: 'power2.out',
+        }, sectionBEnterAt + 0.12);
 
         scrollTimeline
           ?.to(systemsIndexLogoRef.current, {
@@ -1411,6 +1612,15 @@ export default function CoinOrbitHero() {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (!systemsInsightPanelRef.current || !isIndustryOverlayOpen) return;
+    const panel = systemsInsightPanelRef.current;
+    gsap.timeline()
+      .set(panel, { autoAlpha: 1, scaleY: 0.014, filter: 'brightness(18) blur(0px)' })
+      .to(panel, { scaleY: 1, duration: 0.32, ease: 'expo.out' })
+      .to(panel, { filter: 'brightness(1) blur(0px)', duration: 0.26, ease: 'power2.inOut' }, '-=0.20');
+  }, [activeIndustryId, isIndustryOverlayOpen]);
 
   return (
     <section ref={sectionRef} className="coinHero" aria-label="Product design hero section">
@@ -1521,19 +1731,93 @@ export default function CoinOrbitHero() {
                   <p>Digital products for high-trust, data-heavy, operational industries.</p>
                 </div>
                 <div ref={systemsIndustryMatrixRef} className="systemsIndustryMatrix">
-                  {SYSTEM_INDUSTRIES.map((industry, i) => (
-                    <span key={industry} className="systemsIndustryItem">
-                      <b>{String(i + 1).padStart(2, '0')}</b>
-                      {industry}
-                    </span>
+                  {SYSTEM_INDUSTRIES.map((industry) => (
+                    <button
+                      key={industry.id}
+                      type="button"
+                      className={`systemsIndustryItem ${activeIndustryId === industry.id && isIndustryOverlayOpen ? 'isActive' : ''}`}
+                      onMouseEnter={() => openIndustryOverlay(industry.id)}
+                      onFocus={() => openIndustryOverlay(industry.id)}
+                      onClick={() => openIndustryOverlay(industry.id)}
+                      aria-expanded={activeIndustryId === industry.id && isIndustryOverlayOpen}
+                    >
+                      <b>{industry.index}</b>
+                      {industry.label}
+                    </button>
                   ))}
                 </div>
+                {activeIndustry && isIndustryOverlayOpen ? (
+                  <div
+                    ref={systemsInsightPanelRef}
+                    className="systemsInsightFloatingPanel"
+                    onMouseEnter={() => setIsIndustryOverlayOpen(true)}
+                    onMouseLeave={closeIndustryOverlay}
+                    role="dialog"
+                    aria-label={activeIndustry.title}
+                  >
+                    <button
+                      type="button"
+                      className="systemsInsightClose"
+                      onClick={closeIndustryOverlay}
+                      aria-label="Close industry details"
+                    >
+                      ×
+                    </button>
+                    <div className="systemsInsightHeader">
+                      <span>{activeIndustry.index} / 10</span>
+                      <h3>{activeIndustry.title}</h3>
+                      <p>{activeIndustry.summary}</p>
+                    </div>
+                    <div className="systemsInsightGrid">
+                      <div className="systemsInsightBlock">
+                        <span className="systemsInsightLabel">Interface Types</span>
+                        <div className="systemsInsightTags">
+                          {activeIndustry.interfaceTypes.map((item) => (
+                            <span key={item}>{item}</span>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="systemsInsightBlock">
+                        <span className="systemsInsightLabel">Services</span>
+                        <div className="systemsInsightTags">
+                          {activeIndustry.services.map((item) => (
+                            <span key={item}>{item}</span>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="systemsInsightBlock systemsInsightMetrics">
+                        <span className="systemsInsightLabel">Design Pressure Map</span>
+                        {activeIndustry.metrics.map((metric) => (
+                          <div key={metric.label} className="systemsMetricRow">
+                            <div className="systemsMetricTop">
+                              <span>{metric.label}</span>
+                              <b>{metric.value}</b>
+                            </div>
+                            <div className="systemsMetricTrack">
+                              <span style={{ width: `${metric.bar}%` }} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="systemsInsightSignal">
+                        <span className="systemsInsightLabel">Signal</span>
+                        <p>{activeIndustry.signal}</p>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
                 <div ref={systemsCapabilitiesRef} className="systemsCapabilities">
                   {SYSTEM_CAPABILITIES.map((capability) => (
                     <span key={capability}>{capability}</span>
                   ))}
                 </div>
               </div>
+            ) : panel.variant === 'selectedWork' ? (
+              <SelectedWorkVault />
+            ) : panel.variant === 'process' ? (
+              <ProcessBlueprintSection />
+            ) : panel.variant === 'trustEngine' ? (
+              <TrustEngineSection />
             ) : (
               <div className="overlayPanelContent">
                 <span>{panel.title}</span>
@@ -2216,6 +2500,7 @@ export default function CoinOrbitHero() {
           justify-content: center;
           text-align: center;
           color: rgba(255, 255, 255, 0.94);
+          overflow: visible;
         }
 
         .systemsIndexLogo {
@@ -2292,11 +2577,32 @@ export default function CoinOrbitHero() {
           letter-spacing: 0.045em;
           text-transform: uppercase;
           backdrop-filter: blur(8px);
+          cursor: pointer;
+          pointer-events: auto;
+          transition:
+            border-color 180ms ease,
+            background 180ms ease,
+            color 180ms ease,
+            transform 180ms ease;
+        }
+
+        .systemsIndustryItem:hover,
+        .systemsIndustryItem:focus-visible,
+        .systemsIndustryItem.isActive {
+          color: rgba(255, 255, 255, 0.96);
+          border-color: rgba(255, 255, 255, 0.42);
+          background: rgba(255, 255, 255, 0.07);
+          transform: translateY(-1px);
+          outline: none;
         }
 
         .systemsIndustryItem b {
           color: rgba(255, 255, 255, 0.36);
           font-weight: 800;
+        }
+
+        .systemsIndustryItem.isActive b {
+          color: rgba(255, 255, 255, 0.88);
         }
 
         .systemsCapabilities {
@@ -2321,6 +2627,175 @@ export default function CoinOrbitHero() {
           font-weight: 800;
           letter-spacing: 0.055em;
           text-transform: uppercase;
+        }
+
+        .systemsInsightFloatingPanel {
+          position: absolute;
+          left: 50%;
+          top: 50%;
+          z-index: 8;
+          width: min(90vw, 880px);
+          transform: translate(-50%, -50%);
+          transform-origin: center center;
+          padding: 22px 24px 20px;
+          border: 1px solid rgba(255, 255, 255, 0.22);
+          background: #0b0b0b;
+          box-shadow:
+            0 0 0 1px rgba(255, 255, 255, 0.08),
+            0 36px 110px rgba(0, 0, 0, 0.82);
+          color: rgba(255, 255, 255, 0.94);
+          will-change: transform, filter;
+          pointer-events: auto;
+        }
+
+.systemsInsightClose {
+          position: absolute;
+          top: 10px;
+          right: 12px;
+          z-index: 3;
+          width: 28px;
+          height: 28px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: 1px solid rgba(255, 255, 255, 0.18);
+          background: rgba(0, 0, 0, 0.28);
+          color: rgba(255, 255, 255, 0.72);
+          font-size: 18px;
+          line-height: 1;
+          cursor: pointer;
+          transition:
+            color 140ms ease,
+            border-color 140ms ease;
+        }
+
+        .systemsInsightClose:hover,
+        .systemsInsightClose:focus-visible {
+          color: rgba(255, 255, 255, 0.96);
+          border-color: rgba(255, 255, 255, 0.42);
+          outline: none;
+        }
+
+        .systemsInsightHeader {
+          display: grid;
+          grid-template-columns: auto 1fr;
+          gap: 6px 18px;
+          align-items: baseline;
+          text-align: left;
+        }
+
+        .systemsInsightHeader span,
+        .systemsInsightLabel {
+          color: rgba(255, 255, 255, 0.52);
+          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+          font-size: 10px;
+          font-weight: 800;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+        }
+
+        .systemsInsightHeader h3 {
+          margin: 0;
+          color: rgba(255, 255, 255, 0.97);
+          font-size: clamp(20px, 2vw, 30px);
+          line-height: 1.1;
+          font-weight: 500;
+          letter-spacing: -0.03em;
+          text-transform: uppercase;
+        }
+
+        .systemsInsightHeader p {
+          grid-column: 2;
+          margin: 6px 0 0;
+          color: rgba(255, 255, 255, 0.78);
+          font-size: 13px;
+          line-height: 1.58;
+        }
+
+        .systemsInsightGrid {
+          margin-top: 18px;
+          display: grid;
+          grid-template-columns: 1fr 1fr 1.15fr;
+          gap: 14px;
+          text-align: left;
+        }
+
+        .systemsInsightBlock,
+        .systemsInsightSignal {
+          min-height: 112px;
+          padding: 14px;
+          border: 1px solid rgba(255, 255, 255, 0.14);
+          background: rgba(255, 255, 255, 0.04);
+        }
+
+        .systemsInsightTags {
+          margin-top: 12px;
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+
+        .systemsInsightTags span {
+          min-height: 28px;
+          display: inline-flex;
+          align-items: center;
+          padding: 0 10px;
+          border-left: 1px solid rgba(255, 255, 255, 0.24);
+          border-right: 1px solid rgba(255, 255, 255, 0.24);
+          color: rgba(255, 255, 255, 0.88);
+          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+          font-size: 10px;
+          font-weight: 800;
+          letter-spacing: 0.045em;
+          text-transform: uppercase;
+        }
+
+        .systemsInsightSignal {
+          grid-column: 1 / -1;
+          min-height: auto;
+        }
+
+        .systemsInsightSignal p {
+          margin: 10px 0 0;
+          color: rgba(255, 255, 255, 0.84);
+          font-size: 13px;
+          line-height: 1.58;
+        }
+
+        .systemsMetricRow {
+          margin-top: 12px;
+        }
+
+        .systemsMetricTop {
+          display: flex;
+          justify-content: space-between;
+          gap: 14px;
+          color: rgba(255, 255, 255, 0.82);
+          font-size: 11px;
+          line-height: 1.2;
+        }
+
+        .systemsMetricTop b {
+          color: rgba(255, 255, 255, 0.97);
+          font-weight: 800;
+        }
+
+        .systemsMetricTrack {
+          position: relative;
+          margin-top: 7px;
+          height: 2px;
+          background: rgba(255, 255, 255, 0.18);
+          overflow: hidden;
+        }
+
+        .systemsMetricTrack span {
+          position: absolute;
+          left: 0;
+          top: 0;
+          height: 2px;
+          display: block;
+          background: rgba(255, 255, 255, 0.92);
+          box-shadow: 0 0 8px rgba(255, 255, 255, 0.38);
         }
 
         @media (max-width: 640px) {
@@ -2491,18 +2966,81 @@ export default function CoinOrbitHero() {
 
           .systemsIndustryMatrix {
             width: min(90vw, 390px);
-            margin-top: 30px;
+            margin-top: 24px;
             grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 8px;
           }
 
           .systemsIndustryItem {
-            min-height: 44px;
-            gap: 7px;
+            min-height: 42px;
+            gap: 6px;
             padding: 0 8px;
-            font-size: 9px;
-            line-height: 1.25;
-            letter-spacing: 0.035em;
+            font-size: 8.5px;
+            line-height: 1.22;
+            letter-spacing: 0.025em;
+          }
+
+          .systemsInsightFloatingPanel {
+            top: 50%;
+            bottom: auto;
+            left: 50%;
+            width: min(94vw, 420px);
+            transform: translate(-50%, -50%);
+            padding: 14px 14px 12px;
+            border-color: rgba(255, 255, 255, 0.2);
+          }
+
+          .systemsInsightHeader {
+            display: block;
+            text-align: left;
+          }
+
+          .systemsInsightHeader h3 {
+            margin-top: 6px;
+            font-size: 16px;
+            line-height: 1.1;
+          }
+
+          .systemsInsightHeader p {
+            margin-top: 6px;
+            font-size: 11px;
+            line-height: 1.45;
+          }
+
+          .systemsInsightGrid {
+            margin-top: 10px;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+          }
+
+          .systemsInsightBlock,
+          .systemsInsightSignal {
+            min-height: auto;
+            padding: 10px;
+          }
+
+          .systemsInsightSignal,
+          .systemsInsightMetrics {
+            grid-column: 1 / -1;
+          }
+
+          .systemsInsightTags {
+            margin-top: 8px;
+            gap: 6px;
+          }
+
+          .systemsInsightTags span {
+            min-height: 24px;
+            font-size: 8.5px;
+            padding: 0 7px;
+          }
+
+          .systemsMetricRow {
+            margin-top: 8px;
+          }
+
+          .systemsMetricTop {
+            font-size: 10px;
           }
 
           .systemsCapabilities {
