@@ -5,7 +5,7 @@ import type { ReactNode } from 'react';
 
 // ── Project archive data ──────────────────────────────────────────
 
-type PreviewKind = 'fintech' | 'commerce' | 'healthcare' | 'operations' | 'edtech' | 'realestate' | 'saas' | 'travel' | 'media' | 'automotive';
+type PreviewKind = 'fintech' | 'commerce' | 'healthcare' | 'operations' | 'dashboard';
 
 type Project = {
   index: string;
