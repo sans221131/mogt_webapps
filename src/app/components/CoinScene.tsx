@@ -1015,7 +1015,7 @@ export default function CoinOrbitHero() {
     logoLoader.setMeshoptDecoder(MeshoptDecoder);
     logoLoader.load('/3Dlogo.glb', (gltf) => {
       systemsLogoModel = gltf.scene;
-      systemsLogoModel.scale.setScalar(isMobileLayout() ? 0.504 : 0.648);
+      systemsLogoModel.scale.setScalar(isMobileLayout() ? 1.008 : 0.648);
       systemsLogoModel.position.set(0, 0, -0.2);
       systemsLogoMaterials = [];
       systemsLogoModel.traverse((child) => {
@@ -1072,19 +1072,19 @@ export default function CoinOrbitHero() {
     if (!prefersReducedMotion && sectionRef.current) {
       const scrollStart = isMobile ? 0 : 'top top';
       const scrollEnd = isMobile
-        ? () => `+=${Math.round(window.innerHeight * 5.6)}`
+        ? () => `+=${Math.round(window.innerHeight * 6.6)}`
         : () => `+=${Math.round(window.innerHeight * 6.4)}`;
 
       const mobileScrollTargets = {
         progress: 1,
-        radiusBoost: 1.36,
-        coinScaleBoost: 1.88,
-        cameraPush: 0.70,
-        orbitSpeedBoost: 0.12,
-        depthSpread: 0.56,
-        forwardPush: 0.95,
+        radiusBoost: 1.62,
+        coinScaleBoost: 1.74,
+        cameraPush: 0.82,
+        orbitSpeedBoost: 0.1,
+        depthSpread: 0.44,
+        forwardPush: 0.52,
         faceForward: 0.88,
-        exitSpread: 0.20,
+        exitSpread: 0.26,
         coinFade: 0,
       };
 
