@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/dist/ScrollTrigger';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 
 const useIsomorphicLayoutEffect =
   typeof window !== 'undefined' ? useLayoutEffect : useEffect;
@@ -968,7 +969,10 @@ export default function CoinOrbitHero() {
         ) {
           systemsLogoMaterials.forEach((m) => { m.opacity = systemsLogoModelOpacity; });
         }
-        systemsLogoModel.rotation.y += delta * 0.0003;
+        systemsLogoModel.visible = systemsLogoModelOpacity > 0.005;
+        if (systemsLogoModel.visible) {
+          systemsLogoModel.rotation.y += delta * 0.0003;
+        }
       }
 
       renderer.render(scene, camera);
@@ -1008,9 +1012,10 @@ export default function CoinOrbitHero() {
     createCoins();
 
     const logoLoader = new GLTFLoader();
+    logoLoader.setMeshoptDecoder(MeshoptDecoder);
     logoLoader.load('/3Dlogo.glb', (gltf) => {
       systemsLogoModel = gltf.scene;
-      systemsLogoModel.scale.setScalar(isMobileLayout() ? 0.84 : 1.08);
+      systemsLogoModel.scale.setScalar(isMobileLayout() ? 0.504 : 0.648);
       systemsLogoModel.position.set(0, 0, -0.2);
       systemsLogoMaterials = [];
       systemsLogoModel.traverse((child) => {
