@@ -5,6 +5,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/dist/ScrollTrigger';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 const useIsomorphicLayoutEffect =
   typeof window !== 'undefined' ? useLayoutEffect : useEffect;
@@ -153,6 +154,38 @@ const COIN_SVG_BY_INDUSTRY: Record<Industry, string> = {
   `),
 };
 
+const OVERLAY_PANELS: Array<{ label: string; title: string; text: string; variant?: string }> = [
+  {
+    label: 'A',
+    title: 'Interface Systems Index',
+    text: 'Digital products for high-trust, data-heavy, operational industries.',
+    variant: 'systemsIndex',
+  },
+  { label: 'B', title: 'Section B', text: 'Placeholder section B' },
+  { label: 'C', title: 'Section C', text: 'Placeholder section C' },
+  { label: 'D', title: 'Section D', text: 'Placeholder section D' },
+];
+
+const SYSTEM_INDUSTRIES = [
+  'Financial Systems',
+  'Health Infrastructure',
+  'Commerce Platforms',
+  'Learning Systems',
+  'Logistics Ops',
+  'Property Platforms',
+  'Mobility Interfaces',
+  'Travel Infrastructure',
+  'Content Systems',
+  'Software Platforms',
+];
+
+const SYSTEM_CAPABILITIES = [
+  'Product Strategy',
+  'Mobile App Design',
+  'Complex Web Interfaces',
+  'Data Dashboards',
+  'Design Systems',
+];
 
 export default function CoinOrbitHero() {
   const canvasContainerRef = useRef<HTMLDivElement | null>(null);
@@ -169,11 +202,36 @@ export default function CoinOrbitHero() {
   const specializationTextRef = useRef<HTMLParagraphElement | null>(null);
   const specializationActionsRef = useRef<HTMLDivElement | null>(null);
   const specializationHeadingLineRefs = useRef<HTMLSpanElement[]>([]);
+  const overlayPanelRefs = useRef<HTMLDivElement[]>([]);
+  const sideProgressFillRef = useRef<HTMLSpanElement | null>(null);
+  const sideProgressTickRefs = useRef<HTMLSpanElement[]>([]);
+  const telemetryCursorXRef = useRef<HTMLElement | null>(null);
+  const telemetryCursorYRef = useRef<HTMLElement | null>(null);
+  const telemetryScrollRef = useRef<HTMLElement | null>(null);
+  const telemetryTimeRef = useRef<HTMLElement | null>(null);
+  const systemsIntroRef = useRef<HTMLDivElement | null>(null);
+  const systemsIndustryMatrixRef = useRef<HTMLDivElement | null>(null);
+  const systemsCapabilitiesRef = useRef<HTMLDivElement | null>(null);
+  const systemsIndexLogoRef = useRef<HTMLDivElement | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const setSpecializationHeadingLineRef = (element: HTMLSpanElement | null, index: number) => {
     if (element) specializationHeadingLineRefs.current[index] = element;
   };
+
+  const setOverlayPanelRef = (element: HTMLDivElement | null, index: number) => {
+    if (element) overlayPanelRefs.current[index] = element;
+  };
+
+  const setSideProgressTickRef = (element: HTMLSpanElement | null, index: number) => {
+    if (element) sideProgressTickRefs.current[index] = element;
+  };
+
+  const progressStages = [
+    { key: 'hero', label: 'Hero' },
+    { key: 'specialization', label: 'Specialization' },
+    ...OVERLAY_PANELS.map((panel) => ({ key: panel.label, label: panel.title })),
+  ];
 
   useIsomorphicLayoutEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
@@ -197,6 +255,10 @@ export default function CoinOrbitHero() {
     let lastFrameTime = 0;
     let scrollTimeline: gsap.core.Timeline | null = null;
     let gsapCtx: gsap.Context | null = null;
+    let systemsLogoModel: THREE.Group | null = null;
+    let systemsLogoModelOpacity = 0;
+    let systemsLogoModelVisible = false;
+    let systemsLogoMaterials: THREE.Material[] = [];
 
     const scrollStateTarget = {
       progress: 0,
@@ -893,6 +955,22 @@ export default function CoinOrbitHero() {
         glowSprite.scale.set(ns, ns, 1);
       }
 
+      if (telemetryTimeRef.current) {
+        telemetryTimeRef.current.textContent = `${((now - telemetryStartTime) / 1000).toFixed(1)}s`;
+      }
+
+      if (systemsLogoModel) {
+        const logoTarget = systemsLogoModelVisible ? 0.18 : 0;
+        systemsLogoModelOpacity += (logoTarget - systemsLogoModelOpacity) * 0.04;
+        if (
+          systemsLogoMaterials.length > 0 &&
+          Math.abs(systemsLogoModelOpacity - systemsLogoMaterials[0].opacity) > 0.001
+        ) {
+          systemsLogoMaterials.forEach((m) => { m.opacity = systemsLogoModelOpacity; });
+        }
+        systemsLogoModel.rotation.y += delta * 0.0003;
+      }
+
       renderer.render(scene, camera);
     };
 
@@ -929,9 +1007,38 @@ export default function CoinOrbitHero() {
     createBackgroundGlow();
     createCoins();
 
+    const logoLoader = new GLTFLoader();
+    logoLoader.load('/3Dlogo.glb', (gltf) => {
+      systemsLogoModel = gltf.scene;
+      systemsLogoModel.scale.setScalar(isMobileLayout() ? 0.84 : 1.08);
+      systemsLogoModel.position.set(0, 0, -0.2);
+      systemsLogoMaterials = [];
+      systemsLogoModel.traverse((child) => {
+        const mesh = child as THREE.Mesh;
+        if (!mesh.material) return;
+        const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+        mats.forEach((material) => {
+          material.transparent = true;
+          material.opacity = 0;
+          systemsLogoMaterials.push(material);
+        });
+      });
+      scene.add(systemsLogoModel);
+    });
+
     renderer.domElement.addEventListener('click', onClick);
     renderer.domElement.addEventListener('pointermove', onPointerMove);
     renderer.domElement.addEventListener('pointerleave', onPointerLeave);
+
+    const updateTelemetryCursor = (event: PointerEvent) => {
+      if (telemetryCursorXRef.current) {
+        telemetryCursorXRef.current.textContent = `${Math.round(event.clientX)}`;
+      }
+      if (telemetryCursorYRef.current) {
+        telemetryCursorYRef.current.textContent = `${Math.round(event.clientY)}`;
+      }
+    };
+    window.addEventListener('pointermove', updateTelemetryCursor, { passive: true });
 
     if ('ResizeObserver' in window) {
       resizeObserver = new ResizeObserver(onResize);
@@ -960,8 +1067,8 @@ export default function CoinOrbitHero() {
     if (!prefersReducedMotion && sectionRef.current) {
       const scrollStart = isMobile ? 0 : 'top top';
       const scrollEnd = isMobile
-        ? () => `+=${Math.round(window.innerHeight * 0.78)}`
-        : () => `+=${Math.round(window.innerHeight * 1.05)}`;
+        ? () => `+=${Math.round(window.innerHeight * 5.6)}`
+        : () => `+=${Math.round(window.innerHeight * 6.4)}`;
 
       const mobileScrollTargets = {
         progress: 1,
@@ -998,9 +1105,9 @@ export default function CoinOrbitHero() {
       gsapCtx = gsap.context(() => {
         gsap.set(specializationInnerRef.current, {
           autoAlpha: 0,
-          y: isMobile ? 54 : 86,
-          scale: 0.975,
-          filter: isMobile ? 'blur(10px)' : 'blur(24px)',
+          y: () => window.innerHeight * (isMobile ? 0.58 : 0.62),
+          scale: 0.985,
+          filter: isMobile ? 'blur(22px)' : 'blur(34px)',
           pointerEvents: 'none',
         });
 
@@ -1008,8 +1115,8 @@ export default function CoinOrbitHero() {
 
         gsap.set(specializationHeadingLineRefs.current, {
           autoAlpha: 0,
-          y: isMobile ? 34 : 52,
-          filter: isMobile ? 'blur(12px)' : 'blur(20px)',
+          y: isMobile ? 18 : 26,
+          filter: isMobile ? 'blur(12px)' : 'blur(18px)',
         });
 
         gsap.set([
@@ -1018,22 +1125,95 @@ export default function CoinOrbitHero() {
           specializationActionsRef.current,
         ], {
           autoAlpha: 0,
-          y: isMobile ? 24 : 34,
-          filter: isMobile ? 'blur(8px)' : 'blur(14px)',
+          y: isMobile ? 18 : 26,
+          filter: isMobile ? 'blur(10px)' : 'blur(16px)',
         });
 
         gsap.set(specializationActionsRef.current, { pointerEvents: 'none' });
+
+        gsap.set(overlayPanelRefs.current, {
+          autoAlpha: 0,
+          y: () => window.innerHeight * 0.55,
+          filter: 'blur(24px)',
+        });
+
+        gsap.set(systemsIndexLogoRef.current, {
+          autoAlpha: 0,
+          scale: 0.92,
+          filter: 'blur(18px)',
+        });
+
+        gsap.set(systemsIntroRef.current, {
+          autoAlpha: 0,
+          y: isMobile ? 34 : 48,
+          filter: isMobile ? 'blur(12px)' : 'blur(18px)',
+        });
+
+        gsap.set(systemsIndustryMatrixRef.current, {
+          autoAlpha: 0,
+          y: isMobile ? 28 : 38,
+          filter: isMobile ? 'blur(12px)' : 'blur(18px)',
+        });
+
+        gsap.set(systemsCapabilitiesRef.current, {
+          autoAlpha: 0,
+          y: isMobile ? 24 : 32,
+          filter: isMobile ? 'blur(10px)' : 'blur(16px)',
+        });
+
+        gsap.set(sideProgressFillRef.current, {
+          scaleY: 0,
+          transformOrigin: 'top',
+        });
+
+        sideProgressTickRefs.current.forEach((tick) => {
+          tick.classList.remove('isActive');
+        });
+
+        const sectionAEnterAt = 1.18;
+        const sectionALogoAt = sectionAEnterAt + 0.08;
+        const sectionAIntroAt = sectionAEnterAt + 0.18;
+        const sectionAMatrixAt = sectionAEnterAt + 0.58;
+        const sectionACapabilitiesAt = sectionAEnterAt + 0.98;
+        const sectionAHoldUntil = sectionAEnterAt + 1.65;
+        const sectionBEnterAt = sectionAHoldUntil + 0.25;
+        const panelStep = 0.9;
 
         scrollTimeline = gsap.timeline({
           scrollTrigger: {
             trigger: sectionRef.current,
             start: scrollStart,
             end: scrollEnd,
-            scrub: isMobile ? 0.16 : 0.24,
+            scrub: isMobile ? 0.22 : 0.34,
             pin: shouldPin,
             anticipatePin: 1,
             invalidateOnRefresh: true,
             fastScrollEnd: true,
+            onUpdate: (self) => {
+              if (telemetryScrollRef.current) {
+                telemetryScrollRef.current.textContent = self.progress.toFixed(3);
+              }
+
+              const timePos = self.animation?.time() ?? 0;
+              systemsLogoModelVisible = timePos >= sectionALogoAt && timePos <= sectionBEnterAt + 0.1;
+
+              const progress = self.progress;
+
+              if (sideProgressFillRef.current) {
+                gsap.set(sideProgressFillRef.current, { scaleY: progress });
+              }
+
+              const ticks = sideProgressTickRefs.current;
+              const totalTicks = ticks.length;
+              ticks.forEach((tick, index) => {
+                const tickProgress = totalTicks <= 1 ? 0 : index / (totalTicks - 1);
+                if (progress >= tickProgress) {
+                  tick.classList.add('isActive');
+                } else {
+                  tick.classList.remove('isActive');
+                }
+              });
+            },
           },
         });
 
@@ -1057,24 +1237,106 @@ export default function CoinOrbitHero() {
           }, 0.20)
 
           .to(specializationInnerRef.current, {
-            autoAlpha: 1, y: 0, scale: 1, filter: 'blur(0px)', pointerEvents: 'auto', duration: 0.34, ease: 'power2.out',
-          }, 0.40)
+            autoAlpha: 1, y: 0, scale: 1, filter: 'blur(0px)', pointerEvents: 'auto', duration: 0.72, ease: 'power2.out',
+          }, 0.34)
 
           .to(specializationKickerRef.current, {
-            autoAlpha: 1, y: 0, filter: 'blur(0px)', duration: 0.22, ease: 'power2.out',
-          }, 0.48)
+            autoAlpha: 1, y: 0, filter: 'blur(0px)', duration: 0.32, ease: 'power2.out',
+          }, 0.42)
 
           .to(specializationHeadingLineRefs.current, {
-            autoAlpha: 1, y: 0, filter: 'blur(0px)', duration: 0.46, stagger: 0.095, ease: 'power3.out',
-          }, 0.54)
+            autoAlpha: 1, y: 0, filter: 'blur(0px)', duration: 0.54, stagger: 0.075, ease: 'power3.out',
+          }, 0.48)
 
           .to(specializationTextRef.current, {
-            autoAlpha: 1, y: 0, filter: 'blur(0px)', duration: 0.30, ease: 'power2.out',
-          }, 0.84)
+            autoAlpha: 1, y: 0, filter: 'blur(0px)', duration: 0.42, ease: 'power2.out',
+          }, 0.76)
 
           .to(specializationActionsRef.current, {
-            autoAlpha: 1, y: 0, filter: 'blur(0px)', pointerEvents: 'auto', duration: 0.28, ease: 'power2.out',
-          }, 0.94);
+            autoAlpha: 1, y: 0, filter: 'blur(0px)', pointerEvents: 'auto', duration: 0.38, ease: 'power2.out',
+          }, 0.88);
+
+        scrollTimeline?.to(
+          specializationInnerRef.current,
+          {
+            autoAlpha: 0,
+            y: -window.innerHeight * 0.12,
+            filter: 'blur(18px)',
+            pointerEvents: 'none',
+            duration: 0.35,
+            ease: 'none',
+          },
+          1.05,
+        );
+
+        const overlayPanels = overlayPanelRefs.current;
+        const panelTimings = overlayPanels.map((_, index) => {
+          if (index === 0) {
+            return { enterAt: sectionAEnterAt, exitAt: sectionBEnterAt - 0.22 };
+          }
+          const enterAt = sectionBEnterAt + (index - 1) * panelStep;
+          return { enterAt, exitAt: enterAt + 0.62 };
+        });
+
+        overlayPanels.forEach((panel, index) => {
+          const { enterAt, exitAt } = panelTimings[index];
+
+          scrollTimeline?.to(
+            panel,
+            {
+              autoAlpha: 1,
+              y: 0,
+              filter: 'blur(0px)',
+              duration: 0.58,
+              ease: 'none',
+            },
+            enterAt,
+          );
+
+          if (index < overlayPanels.length - 1) {
+            scrollTimeline?.to(
+              panel,
+              {
+                autoAlpha: 0,
+                y: -window.innerHeight * 0.18,
+                filter: 'blur(18px)',
+                duration: 0.38,
+                ease: 'none',
+              },
+              exitAt,
+            );
+          }
+        });
+
+        scrollTimeline
+          ?.to(systemsIndexLogoRef.current, {
+            autoAlpha: 1,
+            scale: 1,
+            filter: 'blur(0px)',
+            duration: 0.42,
+            ease: 'none',
+          }, sectionALogoAt)
+          .to(systemsIntroRef.current, {
+            autoAlpha: 1,
+            y: 0,
+            filter: 'blur(0px)',
+            duration: 0.42,
+            ease: 'none',
+          }, sectionAIntroAt)
+          .to(systemsIndustryMatrixRef.current, {
+            autoAlpha: 1,
+            y: 0,
+            filter: 'blur(0px)',
+            duration: 0.48,
+            ease: 'none',
+          }, sectionAMatrixAt)
+          .to(systemsCapabilitiesRef.current, {
+            autoAlpha: 1,
+            y: 0,
+            filter: 'blur(0px)',
+            duration: 0.42,
+            ease: 'none',
+          }, sectionACapabilitiesAt);
       }, sectionRef);
 
       requestAnimationFrame(() => {
@@ -1082,6 +1344,7 @@ export default function CoinOrbitHero() {
       });
     }
 
+    const telemetryStartTime = performance.now();
     lastFrameTime = performance.now();
     animate();
 
@@ -1092,6 +1355,8 @@ export default function CoinOrbitHero() {
       renderer.domElement.removeEventListener('click', onClick);
       renderer.domElement.removeEventListener('pointermove', onPointerMove);
       renderer.domElement.removeEventListener('pointerleave', onPointerLeave);
+
+      window.removeEventListener('pointermove', updateTelemetryCursor);
 
       if (resizeObserver) resizeObserver.disconnect();
       else window.removeEventListener('resize', onResize);
@@ -1119,6 +1384,15 @@ export default function CoinOrbitHero() {
           material.dispose();
         }
       });
+
+      if (systemsLogoModel) {
+        systemsLogoModel.traverse((child) => {
+          const mesh = child as THREE.Mesh;
+          if (mesh.geometry) mesh.geometry.dispose();
+        });
+        systemsLogoMaterials.forEach((m) => m.dispose());
+        systemsLogoMaterials = [];
+      }
 
       renderer.dispose();
       renderer.forceContextLoss();
@@ -1225,6 +1499,47 @@ export default function CoinOrbitHero() {
         </div>
       </div>
 
+      <div className="overlayPanelStack" aria-label="Portfolio sections">
+        {OVERLAY_PANELS.map((panel, index) => (
+          <div
+            key={panel.label}
+            ref={(element) => setOverlayPanelRef(element, index)}
+            className="overlayPanel"
+            style={{ zIndex: 20 + index }}
+          >
+            {panel.variant === 'systemsIndex' ? (
+              <div className="systemsIndexPanel">
+                <div ref={systemsIndexLogoRef} className="systemsIndexLogo" aria-hidden="true" />
+                <div ref={systemsIntroRef} className="systemsIndexIntro">
+                  <span className="systemsIndexEyebrow">Component A / Operating Fields</span>
+                  <h2>Interface Systems Index</h2>
+                  <p>Digital products for high-trust, data-heavy, operational industries.</p>
+                </div>
+                <div ref={systemsIndustryMatrixRef} className="systemsIndustryMatrix">
+                  {SYSTEM_INDUSTRIES.map((industry, i) => (
+                    <span key={industry} className="systemsIndustryItem">
+                      <b>{String(i + 1).padStart(2, '0')}</b>
+                      {industry}
+                    </span>
+                  ))}
+                </div>
+                <div ref={systemsCapabilitiesRef} className="systemsCapabilities">
+                  {SYSTEM_CAPABILITIES.map((capability) => (
+                    <span key={capability}>{capability}</span>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="overlayPanelContent">
+                <span>{panel.title}</span>
+                <h2>{panel.label}</h2>
+                <p>{panel.text}</p>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
       <div className="portfolioFrame" aria-hidden="true">
         <div className="frameLine frameLineTop" />
         <div className="frameLine frameLineBottom" />
@@ -1234,12 +1549,37 @@ export default function CoinOrbitHero() {
         <span className="frameCorner frameCornerTopRight">+</span>
         <span className="frameCorner frameCornerBottomLeft">+</span>
         <span className="frameCorner frameCornerBottomRight">+</span>
-        <div className="sideBracket sideBracketLeft" />
+        <div className="sideProgress" aria-label="Section scroll progress">
+          <span className="sideProgressRail" />
+          <span ref={sideProgressFillRef} className="sideProgressFill" />
+          <div className="sideProgressTicks">
+            {progressStages.map((stage, index) => (
+              <span
+                key={stage.key}
+                ref={(element) => setSideProgressTickRef(element, index)}
+                className="sideProgressTick"
+                aria-label={stage.label}
+                style={{
+                  top: progressStages.length === 1
+                    ? '0%'
+                    : `${(index / (progressStages.length - 1)) * 100}%`,
+                }}
+              />
+            ))}
+          </div>
+        </div>
         <div className="telemetryPanel">
-          <span>Cursor X:</span><b>1652</b>
-          <span>Cursor Y:</span><b>630</b>
-          <span>Scroll:</span><b>0.115</b>
-          <span>Time:</span><b>44450.0s</b>
+          <span>Cursor X:</span>
+          <b ref={telemetryCursorXRef}>0</b>
+
+          <span>Cursor Y:</span>
+          <b ref={telemetryCursorYRef}>0</b>
+
+          <span>Scroll:</span>
+          <b ref={telemetryScrollRef}>0.000</b>
+
+          <span>Time:</span>
+          <b ref={telemetryTimeRef}>0.0s</b>
         </div>
       </div>
 
@@ -1341,11 +1681,7 @@ export default function CoinOrbitHero() {
           justify-content: center;
           text-align: center;
           will-change: opacity, transform, filter;
-          opacity: 0;
-          visibility: hidden;
           pointer-events: none;
-          transform: translateY(72px) scale(0.975);
-          filter: blur(22px);
         }
 
         .brandMark {
@@ -1712,27 +2048,70 @@ export default function CoinOrbitHero() {
         .frameCornerBottomLeft { bottom: -5px; left: -4px; }
         .frameCornerBottomRight { bottom: -5px; right: -4px; }
 
-        .sideBracketLeft {
+        .sideProgress {
           position: absolute;
-          left: 14px;
+          left: 18px;
           top: 34%;
-          width: 1px;
+          width: 34px;
           height: 255px;
-          border-left: 1px solid rgba(255, 255, 255, 0.16);
+          z-index: 11;
+          pointer-events: none;
         }
 
-        .sideBracketLeft::before,
-        .sideBracketLeft::after {
+        .sideProgressRail {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 1px;
+          height: 100%;
+          display: block;
+          background: rgba(255, 255, 255, 0.14);
+        }
+
+        .sideProgressFill {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 1px;
+          height: 100%;
+          display: block;
+          background: rgba(255, 255, 255, 0.92);
+          transform: scaleY(0);
+          transform-origin: top;
+          will-change: transform;
+          box-shadow: 0 0 10px rgba(255, 255, 255, 0.22);
+        }
+
+        .sideProgressTicks {
+          position: absolute;
+          inset: 0;
+        }
+
+        .sideProgressTick {
+          position: absolute;
+          left: 0;
+          width: 26px;
+          height: 1px;
+          display: block;
+          background: rgba(255, 255, 255, 0.24);
+          transform: translateY(-0.5px);
+          will-change: background, box-shadow;
+        }
+
+        .sideProgressTick::before {
           content: '';
           position: absolute;
           left: 0;
-          width: 22px;
-          height: 1px;
-          background: rgba(255, 255, 255, 0.16);
+          top: -2px;
+          width: 1px;
+          height: 5px;
+          background: rgba(255, 255, 255, 0.18);
         }
 
-        .sideBracketLeft::before { top: 0; }
-        .sideBracketLeft::after { bottom: 0; }
+        .sideProgressTick.isActive {
+          background: rgba(255, 255, 255, 0.92);
+          box-shadow: 0 0 10px rgba(255, 255, 255, 0.24);
+        }
 
         .telemetryPanel {
           position: absolute;
@@ -1758,6 +2137,185 @@ export default function CoinOrbitHero() {
         .telemetryPanel b {
           color: rgba(255, 255, 255, 0.88);
           font-weight: 800;
+        }
+
+        .overlayPanelStack {
+          position: absolute;
+          inset: 0;
+          z-index: 8;
+          pointer-events: none;
+          overflow: hidden;
+        }
+
+        .overlayPanel {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: transparent;
+          color: rgba(255, 255, 255, 0.94);
+          will-change: transform, opacity, filter;
+          pointer-events: none;
+        }
+
+        .overlayPanel::before {
+          content: none;
+        }
+
+        .overlayPanelContent {
+          position: relative;
+          z-index: 1;
+          text-align: center;
+          transform: translateY(-2vh);
+          will-change: opacity, transform, filter;
+        }
+
+        .overlayPanelContent span {
+          display: block;
+          margin-bottom: 20px;
+          color: rgba(255, 255, 255, 0.48);
+          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+          font-size: 12px;
+          font-weight: 800;
+          letter-spacing: 0.14em;
+          text-transform: uppercase;
+        }
+
+        .overlayPanelContent h2 {
+          margin: 0;
+          color: rgba(255, 255, 255, 0.96);
+          font-size: clamp(82px, 15vw, 190px);
+          line-height: 0.9;
+          font-weight: 380;
+          letter-spacing: -0.08em;
+        }
+
+        .overlayPanelContent p {
+          width: min(84vw, 520px);
+          margin: 30px auto 0;
+          color: rgba(255, 255, 255, 0.68);
+          font-size: 15px;
+          line-height: 1.7;
+        }
+
+        .systemsIndexPanel {
+          position: relative;
+          width: min(92vw, 1180px);
+          min-height: 68vh;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+          color: rgba(255, 255, 255, 0.94);
+        }
+
+        .systemsIndexLogo {
+          position: absolute;
+          left: 50%;
+          top: 46%;
+          width: min(26.4vw, 312px);
+          height: min(26.4vw, 312px);
+          transform: translate(-50%, -50%);
+          opacity: 0.16;
+          filter: blur(1px) drop-shadow(0 0 44px rgba(255, 255, 255, 0.12));
+          pointer-events: none;
+          z-index: 0;
+        }
+
+        .systemsIndexIntro,
+        .systemsIndustryMatrix,
+        .systemsCapabilities {
+          position: relative;
+          z-index: 1;
+          will-change: opacity, transform, filter;
+        }
+
+        .systemsIndexEyebrow {
+          display: block;
+          margin-bottom: 18px;
+          color: rgba(255, 255, 255, 0.44);
+          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 0.14em;
+          text-transform: uppercase;
+        }
+
+        .systemsIndexIntro h2 {
+          margin: 0;
+          color: rgba(255, 255, 255, 0.94);
+          font-size: clamp(42px, 5.6vw, 88px);
+          line-height: 0.95;
+          font-weight: 380;
+          letter-spacing: -0.065em;
+          text-transform: uppercase;
+          text-wrap: balance;
+        }
+
+        .systemsIndexIntro p {
+          width: min(84vw, 640px);
+          margin: 26px auto 0;
+          color: rgba(255, 255, 255, 0.68);
+          font-size: clamp(14px, 1.2vw, 17px);
+          line-height: 1.65;
+        }
+
+        .systemsIndustryMatrix {
+          width: min(92vw, 980px);
+          margin-top: 46px;
+          display: grid;
+          grid-template-columns: repeat(5, minmax(0, 1fr));
+          gap: 12px;
+        }
+
+        .systemsIndustryItem {
+          min-height: 52px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          border: 1px solid rgba(255, 255, 255, 0.13);
+          background: rgba(255, 255, 255, 0.025);
+          color: rgba(255, 255, 255, 0.72);
+          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 0.045em;
+          text-transform: uppercase;
+          backdrop-filter: blur(8px);
+        }
+
+        .systemsIndustryItem b {
+          color: rgba(255, 255, 255, 0.36);
+          font-weight: 800;
+        }
+
+        .systemsCapabilities {
+          margin-top: 34px;
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: center;
+          gap: 10px;
+        }
+
+        .systemsCapabilities span {
+          min-height: 38px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0 18px;
+          border-left: 1px solid rgba(255, 255, 255, 0.18);
+          border-right: 1px solid rgba(255, 255, 255, 0.18);
+          color: rgba(255, 255, 255, 0.62);
+          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 0.055em;
+          text-transform: uppercase;
         }
 
         @media (max-width: 640px) {
@@ -1807,7 +2365,7 @@ export default function CoinOrbitHero() {
             display: none;
           }
 
-          .sideBracketLeft {
+          .sideProgress {
             display: none;
           }
 
@@ -1817,8 +2375,7 @@ export default function CoinOrbitHero() {
           }
 
           .specializationInner {
-            transform: translateY(44px) scale(0.975);
-            filter: blur(8px);
+            pointer-events: none;
           }
 
           .specializationKicker {
@@ -1892,6 +2449,68 @@ export default function CoinOrbitHero() {
             width: 132px;
             height: 132px;
             font-size: 10px;
+          }
+
+          .systemsIndexPanel {
+            width: min(90vw, 430px);
+            min-height: 70vh;
+            justify-content: center;
+          }
+
+          .systemsIndexLogo {
+            width: 56.4vw;
+            height: 56.4vw;
+            top: 48%;
+            opacity: 0.10;
+            filter: blur(2px) drop-shadow(0 0 28px rgba(255, 255, 255, 0.10));
+          }
+
+          .systemsIndexEyebrow {
+            margin-bottom: 14px;
+            font-size: 9px;
+            line-height: 1.5;
+          }
+
+          .systemsIndexIntro h2 {
+            font-size: clamp(34px, 11vw, 48px);
+            line-height: 1;
+            letter-spacing: -0.06em;
+          }
+
+          .systemsIndexIntro p {
+            width: min(84vw, 340px);
+            margin-top: 18px;
+            font-size: 13px;
+            line-height: 1.55;
+          }
+
+          .systemsIndustryMatrix {
+            width: min(90vw, 390px);
+            margin-top: 30px;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+          }
+
+          .systemsIndustryItem {
+            min-height: 44px;
+            gap: 7px;
+            padding: 0 8px;
+            font-size: 9px;
+            line-height: 1.25;
+            letter-spacing: 0.035em;
+          }
+
+          .systemsCapabilities {
+            width: min(90vw, 390px);
+            margin-top: 24px;
+            gap: 8px;
+          }
+
+          .systemsCapabilities span {
+            min-height: 34px;
+            padding: 0 12px;
+            font-size: 9px;
+            letter-spacing: 0.04em;
           }
 
         }
