@@ -10,6 +10,8 @@ import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.j
 import SelectedWorkVault from './SelectedWorkVault';
 import ProcessBlueprintSection from './ProcessBlueprintSection';
 import TrustEngineSection from './TrustEngineSection';
+import TestimonialsSection from './TestimonialsSection';
+import ProjectIntakeSection from './ProjectIntakeSection';
 
 const useIsomorphicLayoutEffect =
   typeof window !== 'undefined' ? useLayoutEffect : useEffect;
@@ -168,6 +170,8 @@ const OVERLAY_PANELS: Array<{ label: string; title: string; text: string; varian
   { label: 'B', title: 'Selected Work', text: 'Curated project archive.', variant: 'selectedWork' },
   { label: 'C', title: 'System Assembly', text: 'Blueprint process sequence.', variant: 'process' },
   { label: 'D', title: 'Trust Engine', text: 'Why teams choose us.', variant: 'trustEngine' },
+  { label: 'E', title: 'Client Proof', text: 'Verified build reports.', variant: 'testimonials' },
+  { label: 'F', title: 'Project Intake', text: 'Start a project.', variant: 'projectIntake' },
 ];
 
 type IndustryInsight = {
@@ -337,11 +341,15 @@ const SYSTEM_INDUSTRIES: IndustryInsight[] = [
 
 const SYSTEM_CAPABILITIES = [
   'Product Strategy',
-  'Mobile App Design',
-  'Complex Web Interfaces',
+  'UX / UI Design',
+  'Web App Engineering',
   'Data Dashboards',
   'Design Systems',
 ];
+
+// Public contact endpoint — placeholder, swap for the real inbox when ready.
+const CONTACT_EMAIL = 'hello@mogt.studio';
+const CONTACT_HREF = `mailto:${CONTACT_EMAIL}?subject=Project%20Inquiry%20%E2%80%94%20MOGT`;
 
 export default function CoinOrbitHero() {
   const canvasContainerRef = useRef<HTMLDivElement | null>(null);
@@ -350,7 +358,9 @@ export default function CoinOrbitHero() {
   const brandMarkRef = useRef<HTMLDivElement | null>(null);
   const headingRef = useRef<HTMLHeadingElement | null>(null);
   const subtitleRef = useRef<HTMLParagraphElement | null>(null);
-  const ctaRef = useRef<HTMLAnchorElement | null>(null);
+  const heroEyebrowRef = useRef<HTMLSpanElement | null>(null);
+  const heroTrustlineRef = useRef<HTMLParagraphElement | null>(null);
+  const ctaRef = useRef<HTMLDivElement | null>(null);
   const specializationRef = useRef<HTMLDivElement | null>(null);
   const specializationInnerRef = useRef<HTMLDivElement | null>(null);
   const specializationKickerRef = useRef<HTMLDivElement | null>(null);
@@ -1282,11 +1292,16 @@ export default function CoinOrbitHero() {
 
         gsap.set(specializationActionsRef.current, { pointerEvents: 'none' });
 
+        // Overlay panels start hidden *behind* — clipped from the bottom up,
+        // pushed down and slightly shrunk/blurred so the reveal reads as the
+        // panel emerging from underneath the previous layer rather than a
+        // plain section appearing below it.
         gsap.set(overlayPanelRefs.current, {
           autoAlpha: 0,
-          y: () => window.innerHeight * 0.55,
-          scale: 0.92,
-          filter: 'blur(26px)',
+          yPercent: isMobile ? 8 : 12,
+          scale: 0.985,
+          clipPath: 'inset(100% 0% 0% 0%)',
+          filter: isMobile ? 'blur(10px)' : 'blur(16px)',
           transformOrigin: '50% 50%',
         });
 
@@ -1337,9 +1352,15 @@ export default function CoinOrbitHero() {
         const sectionAIntroAt = sectionAEnterAt + 0.18;
         const sectionAMatrixAt = sectionAEnterAt + 0.58;
         const sectionACapabilitiesAt = sectionAEnterAt + 0.98;
-        const sectionAHoldUntil = sectionAEnterAt + 2.15;
-        const sectionBEnterAt = sectionAHoldUntil + 0.3;
-        const panelStep = 2.2;
+        const sectionAHoldUntil = sectionAEnterAt + 1.9;
+        const sectionBEnterAt = sectionAHoldUntil + 0.25;
+        // Spacing between consecutive panel reveals. panelRevealDur is how long
+        // each reveal/exit takes. Because a panel's exit fires at the exact
+        // moment the next panel begins revealing, the two cross over with no
+        // blank gap — and the short remainder (panelStep − panelRevealDur) is
+        // the only time a panel sits still, keeping the scene in motion.
+        const panelStep = 1.6;
+        const panelRevealDur = 1.0;
 
         // One-shot: fire the Selected Work "archive boot" the first time the
         // scrubbed playhead reaches Section B. Guarded so scrubbing back and
@@ -1364,17 +1385,19 @@ export default function CoinOrbitHero() {
             if (progress >= tickProgress) tick.classList.add('isActive');
             else tick.classList.remove('isActive');
           });
-          // Drive ProcessBlueprintSection step via scroll position
+          // Drive ProcessBlueprintSection step via scroll position (Section C =
+          // panel index 2, one panelStep after Section B).
           const cPanelEnterAt = sectionBEnterAt + panelStep;
-          if (timePos >= cPanelEnterAt && timePos <= cPanelEnterAt + 1.6) {
-            const stepRaw = Math.max(0, Math.min(1, (timePos - cPanelEnterAt) / 1.4));
+          if (timePos >= cPanelEnterAt && timePos <= cPanelEnterAt + panelStep) {
+            const stepRaw = Math.max(0, Math.min(1, (timePos - cPanelEnterAt) / (panelStep * 0.9)));
             const bpStep = Math.min(5, Math.floor(stepRaw * 6));
             window.dispatchEvent(new CustomEvent('blueprintStep', { detail: bpStep }));
           }
-          // Drive TrustEngineSection signal via scroll position
+          // Drive TrustEngineSection signal via scroll position (Section D =
+          // panel index 3, two panelSteps after Section B).
           const dPanelEnterAt = sectionBEnterAt + 2 * panelStep;
           if (timePos >= dPanelEnterAt) {
-            const sigRaw = Math.max(0, Math.min(1, (timePos - dPanelEnterAt) / 1.4));
+            const sigRaw = Math.max(0, Math.min(1, (timePos - dPanelEnterAt) / (panelStep * 0.9)));
             const sigIdx = Math.min(5, Math.floor(sigRaw * 6));
             window.dispatchEvent(new CustomEvent('trustSignal', { detail: sigIdx }));
           }
@@ -1383,6 +1406,9 @@ export default function CoinOrbitHero() {
         const buildTimeline = (tl: gsap.core.Timeline) => {
           tl
             .to(scrollStateTarget, { ...scrollTargets, ease: 'none', duration: 1 }, 0)
+            .to(heroTrustlineRef.current, {
+              opacity: 0, y: -10, duration: 0.10, ease: 'none',
+            }, 0.02)
             .to(ctaRef.current, {
               opacity: 0, y: -12, scale: 0.96, pointerEvents: 'none', duration: 0.12, ease: 'none',
             }, 0.04)
@@ -1392,6 +1418,9 @@ export default function CoinOrbitHero() {
             .to(headingRef.current, {
               opacity: 0, y: -18, scale: 0.975, duration: 0.16, ease: 'none',
             }, 0.16)
+            .to(heroEyebrowRef.current, {
+              opacity: 0, y: -12, duration: 0.12, ease: 'none',
+            }, 0.18)
             .to(brandMarkRef.current, {
               opacity: 0, y: -14, scale: 0.96, duration: 0.14, ease: 'none',
             }, 0.20)
@@ -1421,25 +1450,39 @@ export default function CoinOrbitHero() {
             }, 1.05);
 
           const overlayPanels = overlayPanelRefs.current;
-          const panelTimings = overlayPanels.map((_, index) => {
-            if (index === 0) return { enterAt: sectionAEnterAt, exitAt: sectionBEnterAt - 0.22 };
-            const enterAt = sectionBEnterAt + (index - 1) * panelStep;
-            return { enterAt, exitAt: enterAt + 1.6 };
-          });
+          // Panel 0 (Section A) reveals first and holds while its inner content
+          // staggers in; panels 1..n follow one panelStep apart.
+          const panelEnterAt = (index: number) =>
+            index === 0 ? sectionAEnterAt : sectionBEnterAt + (index - 1) * panelStep;
+
           overlayPanels.forEach((panel, index) => {
-            const { enterAt, exitAt } = panelTimings[index];
+            // REVEAL — the panel un-clips from the bottom up while it rises into
+            // place, settles to full scale and the depth-blur clears. Each panel
+            // sits one z-index above the previous, so it uncovers the layer
+            // behind it instead of stacking below it.
             tl.to(panel, {
-              autoAlpha: 1, y: 0, scale: 1, filter: 'blur(0px)', duration: 0.72, ease: 'power3.out',
-            }, enterAt);
+              autoAlpha: 1,
+              yPercent: 0,
+              scale: 1,
+              clipPath: 'inset(0% 0% 0% 0%)',
+              filter: 'blur(0px)',
+              duration: panelRevealDur,
+              ease: 'power2.out',
+            }, panelEnterAt(index));
+
+            // EXIT — fired at the *same* moment the next panel begins revealing,
+            // so the incoming layer slides up and over this one with no blank
+            // gap. The outgoing panel eases back/up and blurs, reading as depth
+            // receding behind the new layer rather than a section scrolling away.
             if (index < overlayPanels.length - 1) {
               tl.to(panel, {
                 autoAlpha: 0,
-                y: -window.innerHeight * 0.26,
-                scale: 1.06,
-                filter: 'blur(26px)',
-                duration: 0.46,
+                yPercent: isMobile ? -5 : -8,
+                scale: 1.03,
+                filter: isMobile ? 'blur(12px)' : 'blur(20px)',
+                duration: panelRevealDur,
                 ease: 'power2.in',
-              }, exitAt);
+              }, panelEnterAt(index + 1));
             }
           });
 
@@ -1464,18 +1507,23 @@ export default function CoinOrbitHero() {
 
         const mm = gsap.matchMedia();
 
-        // Desktop/tablet: pin starts once the section bottom reaches viewport bottom
-        // (section fully visible), then scroll drives the full timeline.
+        // Desktop/tablet: pin from the moment the hero fills the viewport, then
+        // scroll drives the whole timeline. The scroll length is viewport-
+        // relative and sized to the number of panels so every reveal gets a
+        // consistent, generous slice of travel (≈ continuous cinematic motion
+        // rather than discrete section jumps). A tighter scrub keeps the panels
+        // physically locked to the wheel.
         mm.add('(min-width: 769px)', () => {
           scrollTimeline = gsap.timeline({
             scrollTrigger: {
               trigger: sectionRef.current,
-              start: 'bottom bottom',
-              end: '+=2400',
-              scrub: 0.7,
+              start: 'top top',
+              end: () => '+=' + Math.round(window.innerHeight * 7.6),
+              scrub: 0.45,
               pin: shouldPin,
               pinSpacing: true,
               anticipatePin: 1,
+              fastScrollEnd: true,
               invalidateOnRefresh: true,
               onUpdate: onScrollUpdate,
             },
@@ -1490,11 +1538,14 @@ export default function CoinOrbitHero() {
             scrollTrigger: {
               trigger: sectionRef.current,
               start: 'top top',
-              end: '+=1600',
-              scrub: 0.3,
+              // Same panel sequence, lighter travel per panel so mobile does not
+              // become a long scroll trap while still keeping the overlay reveal.
+              end: () => '+=' + Math.round(window.innerHeight * 5.6),
+              scrub: 0.25,
               pin: shouldPin,
               pinSpacing: true,
               anticipatePin: 1,
+              fastScrollEnd: true,
               invalidateOnRefresh: true,
               onUpdate: onScrollUpdate,
             },
@@ -1579,32 +1630,33 @@ export default function CoinOrbitHero() {
   }, [activeIndustryId, isIndustryOverlayOpen]);
 
   return (
-    <section ref={sectionRef} className="coinHero" aria-label="Product design hero section">
+    <section ref={sectionRef} className="coinHero" aria-label="MOGT agency hero section">
       <div
         ref={canvasContainerRef}
         className="canvasContainer"
         role="img"
-        aria-label="Ten large monochrome industry medallions arranged around product design copy."
+        aria-label="Ten large monochrome industry medallions arranged around the MOGT agency headline."
       />
 
       {isLoading ? <div className="loading">Loading coins</div> : null}
 
-      <header className="portfolioHeader" aria-label="Portfolio navigation">
+      <header className="portfolioHeader" aria-label="Primary navigation">
         <div className="portfolioBrand">
           <span className="brandGlyph">
             <i />
             <i />
             <i />
           </span>
-          <span>Matvey An</span>
+          <span>MOGT</span>
           <span className="soundGlyph" aria-hidden="true" />
         </div>
         <nav className="portfolioNav">
-          <a href="/cv">CV</a>
-          <a href="https://behance.net/" target="_blank" rel="noreferrer">Behance</a>
-          <a href="https://dribbble.com/" target="_blank" rel="noreferrer">Dribbble</a>
-          <a href="https://linkedin.com/" target="_blank" rel="noreferrer">LinkedIn</a>
-          <a href="mailto:hello@example.com">Mail</a>
+          <a href="#work">Work</a>
+          <a href="#process">Process</a>
+          <a href="#why-us">Why Us</a>
+          <a href="#proof">Proof</a>
+          <a href={CONTACT_HREF}>Contact</a>
+          <a className="navCta" href={CONTACT_HREF}>Start Project</a>
         </nav>
       </header>
 
@@ -1615,34 +1667,47 @@ export default function CoinOrbitHero() {
           <span />
         </div>
 
+        <span ref={heroEyebrowRef} className="heroEyebrow">
+          Web Apps / Systems / Product Engineering
+        </span>
+
         <h1 ref={headingRef}>
-          Product Design for Capital,
+          We turn complex ideas into
           <br />
-          Data &amp; Control
+          build-ready digital systems.
         </h1>
 
         <p ref={subtitleRef}>
-          I design fintech platforms, data-heavy dashboards, and operational systems
-          for teams making high-stakes decisions.
+          MOGT designs and builds web apps, dashboards, SaaS platforms, marketplaces,
+          and operational tools for teams that need clarity before code and speed after launch.
         </p>
 
-        <a ref={ctaRef} className="telegramButton" href="https://t.me/" target="_blank" rel="noreferrer">
-          Write to Telegram
-        </a>
+        <div ref={ctaRef} className="heroActions">
+          <a className="telegramButton" href={CONTACT_HREF}>
+            Start a Project
+          </a>
+          <a className="secondaryButton" href="#work">
+            View Selected Work
+          </a>
+        </div>
+
+        <p ref={heroTrustlineRef} className="heroTrustline">
+          Strategy. UX. Frontend. Backend. Deployment.
+        </p>
       </div>
 
       <div ref={specializationRef} className="specializationContent" aria-label="Specialization summary">
         <div ref={specializationInnerRef} className="specializationInner">
           <div ref={specializationKickerRef} className="specializationKicker">
-            Neo Banking <span>/</span> Brokerage <span>/</span> Trading <span>/</span> Investment <span>/</span> Crypto
+            Product Strategy <span>/</span> UX <span>/</span> Frontend <span>/</span> Backend <span>/</span> Deployment
           </div>
 
           <h2 ref={specializationHeadingRef}>
             {[
-              'I specialize in mobile app design,',
-              'design-system development,',
-              'and complex web interfaces',
-              'for financial products',
+              'We design and build web apps,',
+              'dashboards, SaaS platforms,',
+              'and operational systems for teams',
+              'that need clarity before code.',
             ].map((line, index) => (
               <span
                 key={line}
@@ -1655,22 +1720,22 @@ export default function CoinOrbitHero() {
           </h2>
 
           <p ref={specializationTextRef}>
-            I&apos;m currently open to full-time Senior / Lead Product Designer roles in fintech,
-            investment, or infrastructure products. I&apos;m also available for selected high-impact contract work.
+            MOGT partners with founders and product teams to turn complex, ambiguous requirements
+            into structured, build-ready systems — then ships them with engineering that scales.
           </p>
 
           <div ref={specializationActionsRef} className="specializationActions">
-            <a className="telegramButton" href="https://t.me/" target="_blank" rel="noreferrer">
-              Write to Telegram
+            <a className="telegramButton" href={CONTACT_HREF}>
+              Start a Project
             </a>
-            <a className="secondaryButton" href="/cv">
-              Download CV
+            <a className="secondaryButton" href="#work">
+              View Selected Work
             </a>
           </div>
         </div>
       </div>
 
-      <div className="overlayPanelStack" aria-label="Portfolio sections">
+      <div className="overlayPanelStack" aria-label="Agency sections">
         {OVERLAY_PANELS.map((panel, index) => (
           <div
             key={panel.label}
@@ -1682,9 +1747,9 @@ export default function CoinOrbitHero() {
               <div className="systemsIndexPanel">
                 <div ref={systemsIndexLogoRef} className="systemsIndexLogo" aria-hidden="true" />
                 <div ref={systemsIntroRef} className="systemsIndexIntro">
-                  <span className="systemsIndexEyebrow">Component A / Operating Fields</span>
+                  <span className="systemsIndexEyebrow">Section A / Operating Fields</span>
                   <h2>Interface Systems Index</h2>
-                  <p>Digital products for high-trust, data-heavy, operational industries.</p>
+                  <p>We build across product categories where reliability, workflows, and user behavior matter.</p>
                 </div>
                 <div ref={systemsIndustryMatrixRef} className="systemsIndustryMatrix">
                   {SYSTEM_INDUSTRIES.map((industry) => (
@@ -1774,6 +1839,10 @@ export default function CoinOrbitHero() {
               <ProcessBlueprintSection />
             ) : panel.variant === 'trustEngine' ? (
               <TrustEngineSection />
+            ) : panel.variant === 'testimonials' ? (
+              <TestimonialsSection />
+            ) : panel.variant === 'projectIntake' ? (
+              <ProjectIntakeSection contactHref={CONTACT_HREF} />
             ) : (
               <div className="overlayPanelContent">
                 <span>{panel.title}</span>
@@ -1959,6 +2028,60 @@ export default function CoinOrbitHero() {
           text-shadow: 0 0 14px rgba(0, 0, 0, 0.78);
         }
 
+        .heroEyebrow {
+          display: inline-block;
+          margin-bottom: 18px;
+          color: rgba(255, 255, 255, 0.56);
+          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 0.26em;
+          text-transform: uppercase;
+          text-shadow: 0 0 14px rgba(0, 0, 0, 0.7);
+        }
+
+        .heroActions {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          margin-top: 34px;
+          flex-wrap: wrap;
+        }
+
+        .heroActions .telegramButton {
+          margin-top: 0;
+          min-width: 200px;
+        }
+
+        .heroActions .secondaryButton {
+          height: 60px;
+          min-width: 200px;
+        }
+
+        .heroTrustline {
+          margin: 20px 0 0;
+          color: rgba(255, 255, 255, 0.4);
+          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+          font-size: 10.5px;
+          font-weight: 700;
+          letter-spacing: 0.14em;
+          text-transform: uppercase;
+          text-shadow: 0 0 12px rgba(0, 0, 0, 0.7);
+        }
+
+        .navCta {
+          padding: 7px 14px;
+          border: 1px solid rgba(255, 255, 255, 0.3);
+          color: rgba(255, 255, 255, 0.92) !important;
+          background: rgba(255, 255, 255, 0.03);
+          transition: border-color 160ms ease, background 160ms ease;
+        }
+
+        .navCta:hover {
+          border-color: rgba(255, 255, 255, 0.6);
+          background: rgba(255, 255, 255, 0.07);
+        }
+
         .telegramButton {
           position: relative;
           margin-top: 34px;
@@ -2037,8 +2160,11 @@ export default function CoinOrbitHero() {
         }
 
         .brandMark,
+        .heroEyebrow,
         .heroContent h1,
         .heroContent p,
+        .heroActions,
+        .heroTrustline,
         .telegramButton,
         .specializationKicker,
         .specializationContent h2,
@@ -2363,7 +2489,7 @@ export default function CoinOrbitHero() {
           justify-content: center;
           background: transparent;
           color: rgba(255, 255, 255, 0.94);
-          will-change: transform, opacity, filter;
+          will-change: transform, opacity, filter, clip-path;
           pointer-events: none;
         }
 
@@ -2829,6 +2955,32 @@ export default function CoinOrbitHero() {
             margin-top: 18px;
             font-size: 13px;
             line-height: 1.6;
+          }
+
+          .heroEyebrow {
+            margin-bottom: 14px;
+            font-size: 9.5px;
+            letter-spacing: 0.2em;
+          }
+
+          .heroActions {
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 26px;
+            width: min(84vw, 320px);
+          }
+
+          .heroActions .telegramButton,
+          .heroActions .secondaryButton {
+            min-width: 0;
+            width: 100%;
+            height: 54px;
+          }
+
+          .heroTrustline {
+            margin-top: 16px;
+            font-size: 9px;
+            letter-spacing: 0.1em;
           }
 
           .telegramButton {

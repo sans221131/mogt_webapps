@@ -33,10 +33,10 @@ const STEPS = [
     status: 'STABLE',
   },
   {
-    id: '04', name: 'SYSTEMIZE', mode: 'COMPONENT ARCHITECTURE',
-    desc: 'Convert screens into reusable components, patterns, layout rules, and visual systems.',
-    input: ['APPROVED SCREENS', 'REPEATED PATTERNS', 'VISUAL RULES'],
-    output: ['DESIGN SYSTEM', 'COMPONENT LIBRARY', 'RESPONSIVE LOGIC'],
+    id: '04', name: 'BUILD', mode: 'ENGINEERING BUILD',
+    desc: 'Engineer the system into production — reusable components, responsive frontends, and the backend logic behind them.',
+    input: ['APPROVED SCREENS', 'COMPONENT PATTERNS', 'DATA & STATE RULES'],
+    output: ['DESIGN SYSTEM', 'FRONTEND BUILD', 'BACKEND LOGIC'],
     status: 'STABLE',
   },
   {
@@ -325,60 +325,6 @@ function BlueprintSVG({ step, idSuffix = '' }: { step: number; idSuffix?: string
   );
 }
 
-// ── Tiny blueprint thumbnail — mobile preview ──────────────────────────────────
-
-function MiniBlueprintThumb({ step }: { step: number }) {
-  return (
-    <svg viewBox="0 0 120 84" width="120" height="84" aria-hidden="true">
-      <rect width="120" height="84" fill="rgba(255,255,255,0.015)" stroke="rgba(255,255,255,0.1)" strokeWidth="0.5" />
-
-      {step === 0 && (
-        <g>
-          {[[4, 8, 28, 9], [38, 4, 24, 9], [84, 10, 28, 9], [4, 42, 32, 9], [70, 46, 26, 9], [38, 68, 30, 9]].map(([x, y, w, h], i) => (
-            <rect key={i} x={x} y={y} width={w} height={h} fill="none" stroke="rgba(255,255,255,0.24)" strokeWidth="0.5" strokeDasharray="3 1.5" />
-          ))}
-        </g>
-      )}
-
-      {step === 1 && (
-        <g>
-          <circle cx="60" cy="42" r="10" fill="none" stroke="rgba(255,255,255,0.44)" strokeWidth="0.75" />
-          {[[16, 12, 52, 34], [50, 8, 57, 35], [96, 18, 62, 38], [16, 50, 52, 44], [76, 52, 57, 44], [44, 70, 59, 56]].map(([x1, y1, x2, y2], i) => (
-            <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="rgba(255,255,255,0.28)" strokeWidth="0.5" />
-          ))}
-        </g>
-      )}
-
-      {step >= 2 && (
-        <g>
-          <rect x="2" y="2" width="116" height="10" fill="none" stroke="rgba(255,255,255,0.24)" strokeWidth="0.5" />
-          <rect x="2" y="14" width="28" height="66" fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth="0.5" />
-          {[32, 60, 90].map((x, i) => (
-            <rect key={i} x={x} y="14" width="26" height="26" fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth="0.5" />
-          ))}
-          <rect x="32" y="42" width="86" height="38" fill="none" stroke="rgba(255,255,255,0.14)" strokeWidth="0.5" />
-          {step >= 4 && (
-            <>
-              {[32, 60, 90].map((x, i) => (
-                <g key={i}>
-                  <circle cx={x + 20} cy="22" r="5" fill="none" stroke="rgba(255,255,255,0.44)" strokeWidth="0.5" />
-                  <path d={`M${x + 17},22 L${x + 19.5},25 L${x + 23},19`} fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth="0.75" strokeLinecap="round" />
-                </g>
-              ))}
-            </>
-          )}
-          {step === 5 && (
-            <g>
-              <rect x="20" y="28" width="80" height="24" fill="rgba(0,0,0,0.88)" stroke="rgba(255,255,255,0.52)" strokeWidth="0.75" />
-              <text x="60" y="42" textAnchor="middle" fill="rgba(255,255,255,0.85)" fontSize="5.5" fontFamily="monospace" letterSpacing="0.06em">SYSTEM STABLE</text>
-            </g>
-          )}
-        </g>
-      )}
-    </svg>
-  );
-}
-
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function ProcessBlueprintSection() {
@@ -446,6 +392,8 @@ export default function ProcessBlueprintSection() {
     return () => { io.disconnect(); clearTimeout(fallback); };
   }, []);
 
+  const progressPct = (activeStep / STEPS.length) * 100;
+
   return (
     <div ref={sectionRef} className={`processBlueprint${hasBooted ? ' isBooted' : ''}`}>
 
@@ -456,161 +404,110 @@ export default function ProcessBlueprintSection() {
         <div className="bootFlicker" />
       </div>
 
-      {/* ── Background: faint text + corner marker ── */}
+      {/* ── Background: faint label ── */}
       <div className="processBg" aria-hidden="true">
         <span className="processBgText">ASSEMBLY</span>
-        <span className="processCoordBR">SYS.C / {step.id}.0</span>
       </div>
 
       <div className="processInner">
 
-      {/* ── Section header ── */}
-      <header className="processHeader">
-        <span className="processSectionTag">SECTION C / SYSTEM ASSEMBLY</span>
-        <h2 className="processHeading">FROM AMBIGUITY TO OPERATING INTERFACE</h2>
-        <p className="processSubtitle">
-          A structured process for turning complex product requirements into clear, scalable, decision-ready systems.
-        </p>
-      </header>
+        {/* ── Header ── */}
+        <header className="processHeader">
+          <div className="processHeadMain">
+            <span className="processSectionTag">SECTION C / SYSTEM ASSEMBLY</span>
+            <h2 className="processHeading">FROM AMBIGUITY TO EXECUTION</h2>
+            <p className="processSubtitle">
+              A structured process for turning complex product requirements into clear,
+              scalable, build-ready systems.
+            </p>
+          </div>
+          <div className="processHeadAside" aria-hidden="true">
+            <span className="processPhaseInd"><b>{step.id}</b><i>/ 06</i></span>
+            <span className="processPhaseMode">{step.mode}</span>
+          </div>
+        </header>
 
-      {/* ── Desktop: 3-column grid ── */}
-      <div className="processGrid">
-
-        {/* Left: step list */}
-        <nav className="stepsCol" aria-label="Process steps">
+        {/* ── Stepper rail ── */}
+        <nav className="stepper" aria-label="Process steps">
+          <span className="stepperRail" aria-hidden="true" />
+          <span className="stepperFill" aria-hidden="true" style={{ width: `${progressPct}%` }} />
           {STEPS.map((s, i) => (
             <button
               key={s.id}
-              className={`stepItem${activeStep === i ? ' isActive' : ''}`}
+              type="button"
+              className={`stepNode${activeStep === i ? ' isActive' : ''}${i < activeStep ? ' isDone' : ''}`}
               onClick={() => handleStepActivate(i)}
               onMouseEnter={() => handleStepActivate(i)}
               aria-current={activeStep === i ? 'step' : undefined}
             >
-              <span className="stepNum">{s.id} /</span>
-              <span className="stepName">{s.name}</span>
-              {activeStep === i && (
-                <span className="stepStatusChip">{s.status}</span>
-              )}
+              <span className="stepNodeDot" aria-hidden="true" />
+              <span className="stepNodeNum">{s.id}</span>
+              <span className="stepNodeName">{s.name}</span>
             </button>
           ))}
         </nav>
 
-        {/* Center: blueprint SVG */}
-        <div className="blueprintCol">
-          <div className="blueprintFrame">
+        {/* ── Body: detail console + blueprint ── */}
+        <div className="processBody">
+
+          {/* Detail console */}
+          <div className="detailCol">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeStep}
+                className="detailInner"
+                initial={{ opacity: 0, y: 14, filter: 'blur(6px)' }}
+                animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                exit={{ opacity: 0, y: -14, filter: 'blur(6px)' }}
+                transition={{ duration: 0.42, ease: STEP_EASE }}
+              >
+                <div className="detailTop">
+                  <span className="detailNum" aria-hidden="true">{step.id}</span>
+                  <div className="detailTitleWrap">
+                    <h3 className="detailName">{step.name}</h3>
+                    <span className="detailMode">{step.mode}</span>
+                  </div>
+                  <span className="detailStatus">{step.status}</span>
+                </div>
+
+                <p className="detailDesc">{step.desc}</p>
+
+                <div className="ioGrid">
+                  <div className="ioBlock">
+                    <span className="ioLabel">INPUT <i>// AMBIGUITY</i></span>
+                    <ul className="ioList">
+                      {step.input.map((item) => (
+                        <li key={item}><span className="ioMark">+</span>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <span className="ioArrow" aria-hidden="true">→</span>
+                  <div className="ioBlock ioBlockOut">
+                    <span className="ioLabel">OUTPUT <i>// EXECUTION</i></span>
+                    <ul className="ioList">
+                      {step.output.map((item) => (
+                        <li key={item}><span className="ioMark ioMarkOk">✓</span>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+          </div>
+
+          {/* Blueprint viewport */}
+          <div className="blueprintCol">
             <div className="blueprintBar">
               <span>BLUEPRINT / PHASE {step.id}</span>
-              <span>{step.name}</span>
+              <span className="blueprintBarName">{step.name}</span>
             </div>
-            <div className="blueprintSvgWrap">
+            <div className="blueprintViewport">
               <BlueprintSVG step={activeStep} />
+              <div className="blueprintScan" aria-hidden="true" />
+              <span className="blueprintCoord" aria-hidden="true">SYS.C / {step.id}.0</span>
             </div>
-            <div className="blueprintScan" aria-hidden="true" />
           </div>
         </div>
-
-        {/* Right: metadata console panel */}
-        <aside className="metaCol" aria-label="Phase status">
-          <div className="metaPanel">
-            <div className="metaPanelHeader">
-              <span className="metaPanelTitle">SYS / SECTION.C</span>
-              <span className="metaDots">
-                <span className="metaDot" />
-                <span className="metaDot" />
-                <span className={`metaDot${activeStep === 5 ? ' metaDotLit' : ''}`} />
-              </span>
-            </div>
-
-            <div className="metaPanelBody">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={activeStep}
-                  style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}
-                  initial={{ opacity: 0, x: 16, filter: 'blur(6px)' }}
-                  animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
-                  exit={{ opacity: 0, x: -16, filter: 'blur(6px)' }}
-                  transition={{ duration: 0.45, ease: STEP_EASE }}
-                >
-                  <div className="metaRow">
-                    <span className="metaLabel">ACTIVE PHASE</span>
-                    <span className="metaValLarge">{step.id}</span>
-                  </div>
-                  <div className="metaSep" />
-                  <div className="metaRow metaRowWrap">
-                    <span className="metaLabel">MODE</span>
-                    <span className="metaVal">{step.mode}</span>
-                  </div>
-                  <div className="metaSep" />
-
-                  <div className="metaSection">
-                    <span className="metaSectionLabel">INPUT</span>
-                    {step.input.map((item, i) => (
-                      <div key={i} className="metaListRow">
-                        <span className="metaBullet">·</span>
-                        <span className="metaListItem">{item}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="metaSep" />
-
-                  <div className="metaSection">
-                    <span className="metaSectionLabel">OUTPUT</span>
-                    {step.output.map((item, i) => (
-                      <div key={i} className="metaListRow">
-                        <span className="metaBullet">·</span>
-                        <span className="metaListItem">{item}</span>
-                      </div>
-                    ))}
-                  </div>
-                </motion.div>
-              </AnimatePresence>
-            </div>
-
-            <div className="metaPanelFooter">
-              <div className="metaRow">
-                <span className="metaLabel">STATUS</span>
-                <span className="metaStatusChip">{step.status}</span>
-              </div>
-            </div>
-          </div>
-        </aside>
-      </div>
-
-      {/* ── Mobile: step pill nav ── */}
-      <div className="mobileStepNav" aria-label="Select process step">
-        {STEPS.map((s, i) => (
-          <button
-            key={s.id}
-            className={`mobileStepPill${activeStep === i ? ' isActive' : ''}`}
-            onClick={() => handleStepActivate(i)}
-            aria-label={`Step ${s.id}: ${s.name}`}
-            aria-pressed={activeStep === i}
-          >
-            {s.id}
-          </button>
-        ))}
-      </div>
-
-      {/* ── Mobile: active step card ── */}
-      <div className="mobileStepCard">
-        <div className="mobileCardHead">
-          <span className="mobileStepId">{step.id}</span>
-          <span className="mobileStepTitle">{step.name}</span>
-          <span className="mobileStepChip">{step.status}</span>
-        </div>
-        <p className="mobileStepDesc">{step.desc}</p>
-        <div className="mobileBlueprintWrap">
-          <div className="mobileBlueprintBar">
-            <span>BLUEPRINT / PHASE {step.id}</span>
-            <span>{step.name}</span>
-          </div>
-          <div className="mobileBlueprintViewport">
-            <BlueprintSVG step={activeStep} idSuffix="m" />
-            <div className="mobileBlueprintScan" aria-hidden="true" />
-          </div>
-        </div>
-      </div>
 
       </div>{/* /processInner */}
 
@@ -622,7 +519,9 @@ export default function ProcessBlueprintSection() {
           position: relative;
           width: 100%;
           height: 100%;
-          background: #050505;
+          background:
+            radial-gradient(120% 80% at 50% 0%, rgba(255,255,255,0.028), transparent 60%),
+            #050505;
           overflow: hidden;
           pointer-events: all;
           display: flex;
@@ -631,18 +530,21 @@ export default function ProcessBlueprintSection() {
         }
 
         .processInner {
+          position: relative;
+          z-index: 1;
           width: min(calc(100% - 40px), 1200px);
           margin-inline: auto;
           display: flex;
           flex-direction: column;
-          align-items: center;
-          padding-top: 66px;
+          gap: clamp(14px, 2.2vh, 26px);
+          padding-top: 78px;
+          padding-bottom: clamp(18px, 3vh, 34px);
           flex: 1;
           min-height: 0;
           box-sizing: border-box;
         }
 
-        /* ── Background decorations ───────────────────────────────── */
+        /* ── Background ───────────────────────────────────────────── */
 
         .processBg {
           position: absolute;
@@ -653,230 +555,437 @@ export default function ProcessBlueprintSection() {
 
         .processBgText {
           position: absolute;
-          bottom: -0.04em;
+          bottom: -0.06em;
           right: -0.02em;
-          font-size: clamp(80px, 16vw, 210px);
+          font-size: clamp(80px, 16vw, 220px);
           font-weight: 800;
           letter-spacing: -0.06em;
-          color: rgba(255, 255, 255, 0.016);
+          color: rgba(255, 255, 255, 0.018);
           text-transform: uppercase;
           line-height: 1;
           user-select: none;
           font-family: ui-monospace, monospace;
         }
 
-        .processCoordBR {
-          position: absolute;
-          bottom: 14px;
-          right: 18px;
-          font-size: 9px;
-          font-family: ui-monospace, monospace;
-          color: rgba(255, 255, 255, 0.2);
-          letter-spacing: 0.1em;
-          transition: opacity 0.35s ease;
-        }
-
         /* ── Header ───────────────────────────────────────────────── */
 
         .processHeader {
-          width: 100%;
-          max-width: 1200px;
-          padding-top: 14px;
-          padding-bottom: 16px;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-          margin-bottom: 18px;
-          flex-shrink: 0;
           display: flex;
-          align-items: baseline;
+          align-items: flex-start;
+          justify-content: space-between;
           gap: 28px;
-          flex-wrap: wrap;
-        }
-
-        .processSectionTag {
-          font-family: ui-monospace, SFMono-Regular, monospace;
-          font-size: 10.5px;
-          font-weight: 700;
-          letter-spacing: 0.2em;
-          text-transform: uppercase;
-          color: rgba(255, 255, 255, 0.32);
-          white-space: nowrap;
+          padding-bottom: clamp(12px, 2vh, 18px);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.09);
           flex-shrink: 0;
         }
 
-        .processHeading {
-          margin: 0;
-          font-size: clamp(16px, 1.9vw, 28px);
-          font-weight: 380;
-          letter-spacing: -0.02em;
-          line-height: 1.05;
-          color: rgba(255, 255, 255, 0.92);
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          flex: 1;
+        .processHeadMain {
           min-width: 0;
         }
 
-        .processSubtitle {
-          display: none;
-        }
-
-        /* ── 3-column grid ────────────────────────────────────────── */
-
-        .processGrid {
-          display: grid;
-          grid-template-columns: 176px 1fr 240px;
-          width: 100%;
-          max-width: 1200px;
-          flex: 1;
-          min-height: 0;
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          overflow: hidden;
-        }
-
-        /* ── Step list column ─────────────────────────────────────── */
-
-        .stepsCol {
-          border-right: 1px solid rgba(255, 255, 255, 0.07);
-          display: flex;
-          flex-direction: column;
-          overflow: hidden;
-        }
-
-        .stepItem {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          padding: 0 16px;
-          flex: 1;
-          min-height: 0;
-          background: transparent;
-          border: none;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.055);
-          cursor: pointer;
-          text-align: left;
-          transition: background 0.22s ease;
-          position: relative;
-          overflow: hidden;
-        }
-
-        .stepItem:last-child {
-          border-bottom: none;
-        }
-
-        .stepItem::before {
-          content: '';
-          position: absolute;
-          left: 0;
-          top: 0;
-          bottom: 0;
-          width: 2px;
-          background: transparent;
-          transition: background 0.22s ease;
-        }
-
-        .stepItem.isActive::before {
-          background: rgba(255, 255, 255, 0.68);
-        }
-
-        .stepItem.isActive {
-          background: rgba(255, 255, 255, 0.035);
-        }
-
-        .stepItem:hover:not(.isActive) {
-          background: rgba(255, 255, 255, 0.018);
-        }
-
-        .stepNum {
-          font-family: ui-monospace, monospace;
+        .processSectionTag {
+          display: block;
+          font-family: ui-monospace, SFMono-Regular, monospace;
           font-size: 10.5px;
-          letter-spacing: 0.05em;
-          color: rgba(255, 255, 255, 0.24);
-          flex-shrink: 0;
-          transition: color 0.22s ease;
+          font-weight: 700;
+          letter-spacing: 0.22em;
+          text-transform: uppercase;
+          color: rgba(255, 255, 255, 0.34);
         }
 
-        .stepItem.isActive .stepNum {
+        .processHeading {
+          margin: 10px 0 0;
+          font-size: clamp(22px, 2.6vw, 38px);
+          font-weight: 380;
+          letter-spacing: -0.025em;
+          line-height: 1.04;
+          text-transform: uppercase;
+          color: rgba(255, 255, 255, 0.94);
+        }
+
+        .processSubtitle {
+          margin: 12px 0 0;
+          max-width: 52ch;
+          font-size: clamp(12.5px, 1vw, 14.5px);
+          line-height: 1.6;
+          font-weight: 360;
           color: rgba(255, 255, 255, 0.5);
         }
 
-        .stepName {
-          font-family: ui-monospace, monospace;
-          font-size: 11.5px;
-          font-weight: 700;
-          letter-spacing: 0.1em;
-          text-transform: uppercase;
-          color: rgba(255, 255, 255, 0.28);
-          flex: 1;
-          transition: color 0.22s ease;
-        }
-
-        .stepItem.isActive .stepName {
-          color: rgba(255, 255, 255, 0.9);
-        }
-
-        .stepStatusChip {
-          font-family: ui-monospace, monospace;
-          font-size: 8.5px;
-          font-weight: 700;
-          letter-spacing: 0.1em;
-          text-transform: uppercase;
-          color: rgba(255, 255, 255, 0.55);
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          padding: 3px 7px;
+        .processHeadAside {
           flex-shrink: 0;
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 8px;
+          text-align: right;
+          padding-top: 2px;
+        }
+
+        .processPhaseInd {
+          font-family: ui-monospace, monospace;
+          display: inline-flex;
+          align-items: baseline;
+          gap: 7px;
+          line-height: 1;
+        }
+
+        .processPhaseInd b {
+          font-size: clamp(30px, 3.4vw, 46px);
+          font-weight: 400;
+          letter-spacing: 0.02em;
+          color: rgba(255, 255, 255, 0.92);
+        }
+
+        .processPhaseInd i {
+          font-style: normal;
+          font-size: 13px;
+          letter-spacing: 0.08em;
+          color: rgba(255, 255, 255, 0.32);
+        }
+
+        .processPhaseMode {
+          font-family: ui-monospace, monospace;
+          font-size: 9px;
+          font-weight: 700;
+          letter-spacing: 0.14em;
+          text-transform: uppercase;
+          color: rgba(255, 255, 255, 0.42);
+          border: 1px solid rgba(255, 255, 255, 0.14);
+          padding: 4px 9px;
           white-space: nowrap;
         }
 
-        /* ── Blueprint center column ──────────────────────────────── */
+        /* ── Stepper rail ─────────────────────────────────────────── */
 
-        .blueprintCol {
+        .stepper {
+          position: relative;
+          display: grid;
+          grid-template-columns: repeat(6, 1fr);
+          align-items: start;
+          flex-shrink: 0;
+        }
+
+        .stepperRail,
+        .stepperFill {
+          position: absolute;
+          top: 5px;
+          left: calc(100% / 12);
+          height: 1px;
+          pointer-events: none;
+        }
+
+        .stepperRail {
+          right: calc(100% / 12);
+          background: rgba(255, 255, 255, 0.12);
+        }
+
+        .stepperFill {
+          background: rgba(255, 255, 255, 0.78);
+          box-shadow: 0 0 9px rgba(255, 255, 255, 0.4);
+          transition: width 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .stepNode {
+          position: relative;
+          z-index: 1;
           display: flex;
-          align-items: stretch;
-          border-right: 1px solid rgba(255, 255, 255, 0.07);
-          padding: 8px;
+          flex-direction: column;
+          align-items: center;
+          gap: 9px;
+          padding: 0 4px;
+          background: transparent;
+          border: none;
+          cursor: pointer;
+          text-align: center;
+        }
+
+        .stepNodeDot {
+          width: 11px;
+          height: 11px;
+          border-radius: 50%;
+          background: #050505;
+          border: 1px solid rgba(255, 255, 255, 0.28);
+          transition: border-color 0.25s ease, background 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+        }
+
+        .stepNode.isDone .stepNodeDot {
+          background: rgba(255, 255, 255, 0.45);
+          border-color: rgba(255, 255, 255, 0.55);
+        }
+
+        .stepNode.isActive .stepNodeDot {
+          background: rgba(255, 255, 255, 0.95);
+          border-color: rgba(255, 255, 255, 0.95);
+          box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.08), 0 0 12px rgba(255, 255, 255, 0.45);
+          transform: scale(1.1);
+        }
+
+        .stepNodeNum {
+          font-family: ui-monospace, monospace;
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.06em;
+          color: rgba(255, 255, 255, 0.32);
+          transition: color 0.25s ease;
+        }
+
+        .stepNode.isActive .stepNodeNum {
+          color: rgba(255, 255, 255, 0.62);
+        }
+
+        .stepNodeName {
+          font-family: ui-monospace, monospace;
+          font-size: 10.5px;
+          font-weight: 700;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: rgba(255, 255, 255, 0.3);
+          transition: color 0.25s ease;
+          white-space: nowrap;
+        }
+
+        .stepNode:hover .stepNodeName {
+          color: rgba(255, 255, 255, 0.6);
+        }
+
+        .stepNode.isActive .stepNodeName {
+          color: rgba(255, 255, 255, 0.92);
+        }
+
+        /* ── Body ─────────────────────────────────────────────────── */
+
+        .processBody {
+          flex: 1;
+          min-height: 0;
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) minmax(0, 1.06fr);
+          border: 1px solid rgba(255, 255, 255, 0.09);
+          overflow: hidden;
+        }
+
+        /* ── Detail console ───────────────────────────────────────── */
+
+        .detailCol {
+          position: relative;
+          display: flex;
+          border-right: 1px solid rgba(255, 255, 255, 0.08);
+          padding: clamp(18px, 2.6vh, 30px) clamp(18px, 2vw, 30px);
           min-height: 0;
           overflow: hidden;
         }
 
-        .blueprintFrame {
-          position: relative;
-          width: 100%;
+        /* :global — this element is a framer-motion node (motion.div), which
+           styled-jsx does not scope, so a normal scoped rule would miss it. */
+        :global(.detailInner) {
+          display: flex;
+          flex-direction: column;
+          flex: 1;
+          min-height: 0;
+          gap: clamp(16px, 3vh, 30px);
+        }
+
+        .detailTop {
+          display: flex;
+          align-items: flex-start;
+          gap: 16px;
+        }
+
+        .detailNum {
+          font-family: ui-monospace, monospace;
+          font-size: clamp(40px, 5vw, 68px);
+          font-weight: 400;
+          line-height: 0.82;
+          letter-spacing: -0.02em;
+          color: rgba(255, 255, 255, 0.9);
+          flex-shrink: 0;
+        }
+
+        .detailTitleWrap {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          flex: 1;
+          min-width: 0;
+          padding-top: 2px;
+        }
+
+        .detailName {
+          margin: 0;
+          font-family: ui-monospace, monospace;
+          font-size: clamp(20px, 2vw, 28px);
+          font-weight: 700;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          color: rgba(255, 255, 255, 0.95);
+          line-height: 1;
+        }
+
+        .detailMode {
+          font-family: ui-monospace, monospace;
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.16em;
+          text-transform: uppercase;
+          color: rgba(255, 255, 255, 0.4);
+        }
+
+        .detailStatus {
+          flex-shrink: 0;
+          font-family: ui-monospace, monospace;
+          font-size: 9px;
+          font-weight: 700;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          color: rgba(255, 255, 255, 0.72);
+          border: 1px solid rgba(255, 255, 255, 0.24);
+          padding: 4px 9px;
+          white-space: nowrap;
+        }
+
+        .detailDesc {
+          margin: 0;
+          font-size: clamp(13.5px, 1.05vw, 15.5px);
+          line-height: 1.72;
+          font-weight: 360;
+          color: rgba(255, 255, 255, 0.62);
+          max-width: 56ch;
+        }
+
+        .ioGrid {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+          align-items: stretch;
+          gap: clamp(10px, 1.4vw, 18px);
+          margin-top: auto;
+        }
+
+        .ioBlock {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          padding: 14px 15px;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          background: rgba(255, 255, 255, 0.012);
+        }
+
+        .ioBlockOut {
+          border-color: rgba(255, 255, 255, 0.18);
+          background: rgba(255, 255, 255, 0.03);
+        }
+
+        .ioLabel {
+          font-family: ui-monospace, monospace;
+          font-size: 9.5px;
+          font-weight: 700;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          color: rgba(255, 255, 255, 0.46);
+        }
+
+        .ioLabel i {
+          font-style: normal;
+          color: rgba(255, 255, 255, 0.24);
+          letter-spacing: 0.08em;
+        }
+
+        .ioList {
+          list-style: none;
+          margin: 0;
+          padding: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .ioList li {
+          display: flex;
+          align-items: center;
+          gap: 9px;
+          font-family: ui-monospace, monospace;
+          font-size: 11px;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+          color: rgba(255, 255, 255, 0.62);
+          line-height: 1.3;
+        }
+
+        .ioMark {
+          flex-shrink: 0;
+          width: 14px;
+          text-align: center;
+          color: rgba(255, 255, 255, 0.3);
+          font-weight: 700;
+        }
+
+        .ioMarkOk {
+          color: rgba(255, 255, 255, 0.82);
+        }
+
+        .ioArrow {
+          align-self: center;
+          font-size: 22px;
+          color: rgba(255, 255, 255, 0.4);
+          line-height: 1;
+        }
+
+        /* ── Blueprint column ─────────────────────────────────────── */
+
+        .blueprintCol {
           display: flex;
           flex-direction: column;
           min-height: 0;
+          padding: clamp(10px, 1.4vh, 16px);
         }
 
         .blueprintBar {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 7px 12px;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.07);
-          margin-bottom: 10px;
+          padding: 8px 12px;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-bottom: none;
+          background: rgba(255, 255, 255, 0.015);
           flex-shrink: 0;
         }
 
         .blueprintBar span {
           font-family: ui-monospace, monospace;
-          font-size: 10px;
+          font-size: 9.5px;
           font-weight: 700;
           letter-spacing: 0.1em;
           text-transform: uppercase;
-          color: rgba(255, 255, 255, 0.28);
+          color: rgba(255, 255, 255, 0.3);
         }
 
-        .blueprintBar span:last-child {
-          color: rgba(255, 255, 255, 0.52);
+        .blueprintBarName {
+          color: rgba(255, 255, 255, 0.55) !important;
         }
 
-        .blueprintSvgWrap {
+        .blueprintViewport {
+          position: relative;
           flex: 1;
           min-height: 0;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          background:
+            radial-gradient(120% 120% at 50% 40%, rgba(255,255,255,0.014), transparent 70%),
+            #060606;
           overflow: hidden;
           display: flex;
           align-items: center;
           justify-content: center;
+          padding: 10px;
+        }
+
+        .blueprintCoord {
+          position: absolute;
+          bottom: 8px;
+          right: 10px;
+          font-family: ui-monospace, monospace;
+          font-size: 8.5px;
+          letter-spacing: 0.12em;
+          color: rgba(255, 255, 255, 0.26);
+          pointer-events: none;
         }
 
         .blueprintScan {
@@ -898,161 +1007,6 @@ export default function ProcessBlueprintSection() {
           100% { background-position: 0 200%; }
         }
 
-        /* ── Metadata panel column ────────────────────────────────── */
-
-        .metaCol {
-          display: flex;
-          flex-direction: column;
-          padding: 8px;
-          min-height: 0;
-          overflow: hidden;
-        }
-
-        .metaPanel {
-          display: flex;
-          flex-direction: column;
-          height: 100%;
-          border: 1px solid rgba(255, 255, 255, 0.11);
-          overflow: hidden;
-          font-family: ui-monospace, SFMono-Regular, monospace;
-        }
-
-        .metaPanelHeader {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 9px 13px;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.09);
-          background: rgba(255, 255, 255, 0.025);
-          flex-shrink: 0;
-        }
-
-        .metaPanelTitle {
-          font-size: 10px;
-          font-weight: 700;
-          letter-spacing: 0.14em;
-          text-transform: uppercase;
-          color: rgba(255, 255, 255, 0.4);
-        }
-
-        .metaDots {
-          display: flex;
-          gap: 4px;
-        }
-
-        .metaDot {
-          width: 5px;
-          height: 5px;
-          border-radius: 50%;
-          background: rgba(255, 255, 255, 0.14);
-        }
-
-        .metaDotLit {
-          background: rgba(255, 255, 255, 0.72);
-        }
-
-        .metaPanelBody {
-          flex: 1;
-          padding: 14px 14px;
-          overflow: hidden;
-          display: flex;
-          flex-direction: column;
-        }
-
-        .metaRow {
-          display: flex;
-          justify-content: space-between;
-          align-items: baseline;
-          gap: 8px;
-          padding: 4px 0;
-        }
-
-        .metaRowWrap {
-          align-items: flex-start;
-        }
-
-        .metaLabel {
-          font-size: 9.5px;
-          letter-spacing: 0.12em;
-          text-transform: uppercase;
-          color: rgba(255, 255, 255, 0.3);
-          flex-shrink: 0;
-        }
-
-        .metaVal {
-          font-size: 10px;
-          letter-spacing: 0.05em;
-          color: rgba(255, 255, 255, 0.62);
-          text-align: right;
-          line-height: 1.5;
-        }
-
-        .metaValLarge {
-          font-size: 28px;
-          font-weight: 700;
-          color: rgba(255, 255, 255, 0.9);
-          letter-spacing: 0.04em;
-          line-height: 1;
-        }
-
-        .metaSep {
-          height: 1px;
-          background: rgba(255, 255, 255, 0.055);
-          margin: 4px 0;
-          flex-shrink: 0;
-        }
-
-        .metaSection {
-          display: flex;
-          flex-direction: column;
-          gap: 3px;
-          padding: 4px 0;
-        }
-
-        .metaSectionLabel {
-          font-size: 9px;
-          letter-spacing: 0.12em;
-          text-transform: uppercase;
-          color: rgba(255, 255, 255, 0.28);
-          margin-bottom: 5px;
-        }
-
-        .metaListRow {
-          display: flex;
-          align-items: center;
-          gap: 7px;
-        }
-
-        .metaBullet {
-          color: rgba(255, 255, 255, 0.28);
-          font-size: 11px;
-          line-height: 1;
-          flex-shrink: 0;
-        }
-
-        .metaListItem {
-          font-size: 9.5px;
-          letter-spacing: 0.05em;
-          color: rgba(255, 255, 255, 0.55);
-          line-height: 1.55;
-        }
-
-        .metaPanelFooter {
-          padding: 9px 13px;
-          border-top: 1px solid rgba(255, 255, 255, 0.09);
-          flex-shrink: 0;
-        }
-
-        .metaStatusChip {
-          font-size: 9px;
-          font-weight: 700;
-          letter-spacing: 0.12em;
-          text-transform: uppercase;
-          padding: 3px 8px;
-          border: 1px solid rgba(255, 255, 255, 0.22);
-          color: rgba(255, 255, 255, 0.7);
-        }
-
         /* ── Boot animation ───────────────────────────────────────── */
 
         .bootLayer {
@@ -1062,12 +1016,10 @@ export default function ProcessBlueprintSection() {
           z-index: 20;
         }
 
-        /* Hide boot layer before boot so it doesn't flash */
         .processBlueprint:not(.isBooted) .bootLayer {
           display: none;
         }
 
-        /* Expanding boot line */
         .bootLine {
           position: absolute;
           top: 50%;
@@ -1090,7 +1042,6 @@ export default function ProcessBlueprintSection() {
           100% { transform: scaleX(1); opacity: 0; }
         }
 
-        /* Radial screen-activation glow */
         .bootGlow {
           position: absolute;
           inset: 0;
@@ -1108,7 +1059,6 @@ export default function ProcessBlueprintSection() {
           100% { opacity: 0; }
         }
 
-        /* CRT flicker */
         .bootFlicker {
           position: absolute;
           inset: 0;
@@ -1132,259 +1082,115 @@ export default function ProcessBlueprintSection() {
 
         /* Content: hidden until boot, then staggered reveal */
         .processBlueprint:not(.isBooted) .processHeader,
-        .processBlueprint:not(.isBooted) .processGrid,
-        .processBlueprint:not(.isBooted) .mobileStepNav,
-        .processBlueprint:not(.isBooted) .mobileStepCard {
+        .processBlueprint:not(.isBooted) .stepper,
+        .processBlueprint:not(.isBooted) .processBody {
           opacity: 0;
         }
 
         .processBlueprint.isBooted .processHeader {
-          animation: bootReveal 0.5s ease 0.5s both;
+          animation: bootReveal 0.5s ease 0.46s both;
         }
 
-        .processBlueprint.isBooted .processGrid {
-          animation: bootReveal 0.55s ease 0.62s both;
+        .processBlueprint.isBooted .stepper {
+          animation: bootReveal 0.5s ease 0.56s both;
         }
 
-        .processBlueprint.isBooted .mobileStepNav {
-          animation: bootReveal 0.45s ease 0.5s both;
-        }
-
-        .processBlueprint.isBooted .mobileStepCard {
-          animation: bootReveal 0.5s ease 0.62s both;
+        .processBlueprint.isBooted .processBody {
+          animation: bootReveal 0.55s ease 0.64s both;
         }
 
         @keyframes bootReveal {
-          0%   { opacity: 0; transform: translateY(5px); }
+          0%   { opacity: 0; transform: translateY(6px); }
           100% { opacity: 1; transform: translateY(0); }
-        }
-
-        /* ── Mobile elements (hidden on desktop) ──────────────────── */
-
-        .mobileStepNav,
-        .mobileStepCard {
-          display: none;
         }
 
         /* ── Responsive ───────────────────────────────────────────── */
 
+        /* Tablet: relax the two columns, smaller blueprint share */
         @media (max-width: 1080px) {
-          .processGrid {
-            grid-template-columns: 152px 1fr;
+          .processBody {
+            grid-template-columns: minmax(0, 1fr) minmax(0, 0.92fr);
           }
-          .metaCol {
-            display: none;
-          }
-          .blueprintCol {
-            border-right: none;
+          .stepNodeName {
+            font-size: 9.5px;
+            letter-spacing: 0.04em;
           }
         }
 
-        @media (max-width: 768px) {
-          /* ── Container: break free of the desktop panel height ─────── */
-          /* height: 100% + flex: 1 on the card = huge empty area. Fix: auto. */
-          .processBlueprint {
-            height: auto;
-            min-height: 0;
-            overflow-x: hidden;
-          }
-
+        /* ── Stacked layout: detail console on top, blueprint fills below.
+           The panel is pinned to the viewport on mobile and cannot scroll
+           internally, so nothing may exceed ~100svh. The console keeps its
+           natural (priority) height and the blueprint flexes into whatever
+           space is left — guaranteeing no overflow and no dead gap. ── */
+        @media (max-width: 860px) {
           .processInner {
-            width: min(calc(100% - 32px), 1200px);
-            padding-top: 48px;
-            padding-bottom: 36px;
-            flex: none;
+            gap: 14px;
+            padding-top: 70px;
+            padding-bottom: 20px;
           }
-
-          /* ── Desktop grid + decorative bg elements → hide ──────────── */
-          .processGrid    { display: none; }
-          .processBgText  { display: none; }
-          .processCoordBR { display: none; }
-
-          /* ── Header: stack vertically instead of one truncated row ──── */
-          /* Desktop: flex-row with white-space: nowrap on heading = clipped.
-             Mobile: column so every line wraps naturally. */
           .processHeader {
             flex-direction: column;
-            align-items: flex-start;
-            gap: 6px;
-            padding-top: 0;
-            padding-bottom: 16px;
-            margin-bottom: 18px;
+            gap: 12px;
           }
-
-          .processSectionTag {
-            white-space: normal;
-          }
-
-          /* Kill the desktop nowrap + ellipsis that truncates the heading */
-          .processHeading {
-            white-space: normal;
-            overflow: visible;
-            text-overflow: unset;
-            flex: none;
-            font-size: clamp(20px, 5.6vw, 28px);
-            line-height: 1.18;
-          }
-
-          .processSubtitle { display: none; }
-
-          /* ── Step nav: 3-column grid, even cells, no free-wrap mess ─── */
-          .mobileStepNav {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 6px;
-            width: 100%;
-            max-width: 1200px;
-            margin-bottom: 16px;
-            flex-shrink: 0;
-          }
-
-          .mobileStepPill {
-            display: flex;
+          .processHeadAside {
+            flex-direction: row;
             align-items: center;
-            justify-content: center;
-            width: 100%;
-            height: 38px;
-            border: 1px solid rgba(255, 255, 255, 0.13);
-            background: transparent;
-            cursor: pointer;
-            font-family: ui-monospace, monospace;
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-            color: rgba(255, 255, 255, 0.32);
-            transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+            align-self: flex-start;
+            gap: 12px;
           }
-
-          .mobileStepPill.isActive {
-            border-color: rgba(255, 255, 255, 0.52);
-            color: rgba(255, 255, 255, 0.92);
-            background: rgba(255, 255, 255, 0.04);
+          /* Drop the subtitle on mobile to reclaim vertical room */
+          .processSubtitle {
+            display: none;
           }
-
-          /* ── Step card: auto height, no flex-grow creating dead space ─ */
-          /* Desktop: flex: 1 + overflow: hidden → card fills panel height.
-             Mobile: flex: none + height: auto → card is exactly content size. */
-          .mobileStepCard {
+          .processBody {
             display: flex;
             flex-direction: column;
-            gap: 16px;
-            width: 100%;
-            max-width: 1200px;
-            border: 1px solid rgba(255, 255, 255, 0.09);
-            padding: 20px 18px;
-            box-sizing: border-box;
+          }
+          .detailCol {
+            border-right: none;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
             flex: none;
-            height: auto;
-            min-height: 0;
-            overflow-x: hidden;
+            padding: 18px;
           }
-
-          .mobileCardHead {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
+          :global(.detailInner) {
+            gap: 16px;
           }
-
-          .mobileStepId {
-            font-family: ui-monospace, monospace;
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 0.06em;
-            color: rgba(255, 255, 255, 0.38);
-            flex-shrink: 0;
+          .ioGrid {
+            margin-top: 2px;
           }
-
-          /* Title: 22-26px as spec'd, allow chip to wrap below if needed */
-          .mobileStepTitle {
-            font-family: ui-monospace, monospace;
-            font-size: 22px;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            color: rgba(255, 255, 255, 0.9);
+          /* Blueprint absorbs the remaining height; shrinks gracefully on
+             short screens instead of pushing the console off-panel */
+          .blueprintCol {
             flex: 1;
-            min-width: 0;
+            min-height: 0;
           }
-
-          .mobileStepChip {
-            font-family: ui-monospace, monospace;
-            font-size: 8.5px;
-            font-weight: 700;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            border: 1px solid rgba(255, 255, 255, 0.22);
-            color: rgba(255, 255, 255, 0.55);
-            padding: 3px 8px;
-            flex-shrink: 0;
-            white-space: nowrap;
+          /* Stepper: keep the rail, drop the labels so 6 nodes fit cleanly */
+          .stepNodeName {
+            display: none;
           }
+        }
 
-          /* Body text: 14-15px, 1.6 line-height as spec'd */
-          .mobileStepDesc {
-            margin: 0;
-            font-size: 14px;
-            line-height: 1.65;
-            color: rgba(255, 255, 255, 0.52);
+        @media (max-width: 560px) {
+          .processInner {
+            width: min(calc(100% - 32px), 1200px);
+            padding-top: 66px;
           }
-
-          /* ── Desktop blueprint panel, mobile viewport ───────────────
-             The same BlueprintSVG used on desktop is rendered here.
-             aspect-ratio: 480/340 matches the SVG viewBox exactly so
-             the SVG fills the container with no letterboxing or crop. */
-          .mobileBlueprintWrap {
-            width: 100%;
-            padding-top: 16px;
-            border-top: 1px solid rgba(255, 255, 255, 0.06);
+          .detailCol {
+            padding: 16px 14px;
           }
-
-          .mobileBlueprintBar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 6px 10px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-bottom: none;
-            background: rgba(255, 255, 255, 0.015);
+          .detailTop {
+            gap: 12px;
           }
-
-          .mobileBlueprintBar span {
-            font-family: ui-monospace, monospace;
-            font-size: 9px;
-            font-weight: 700;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            color: rgba(255, 255, 255, 0.28);
+          .detailStatus {
+            display: none;
           }
-
-          .mobileBlueprintBar span:last-child {
-            color: rgba(255, 255, 255, 0.52);
+          /* IO blocks stack with the arrow rotating to point down */
+          .ioGrid {
+            grid-template-columns: 1fr;
           }
-
-          /* aspect-ratio matches 480:340 viewBox — SVG fills perfectly */
-          .mobileBlueprintViewport {
-            position: relative;
-            width: 100%;
-            aspect-ratio: 480 / 340;
-            overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-          }
-
-          /* Reuse the same scan animation as the desktop blueprint */
-          .mobileBlueprintScan {
-            position: absolute;
-            inset: 0;
-            pointer-events: none;
-            background: linear-gradient(
-              to bottom,
-              transparent 0%,
-              rgba(255, 255, 255, 0.022) 50%,
-              transparent 100%
-            );
-            background-size: 100% 200%;
-            animation: bpScan 5s linear infinite;
+          .ioArrow {
+            transform: rotate(90deg);
+            margin: -2px 0;
           }
         }
 
@@ -1392,27 +1198,20 @@ export default function ProcessBlueprintSection() {
 
         @media (prefers-reduced-motion: reduce) {
           .blueprintScan,
-          .mobileBlueprintScan {
+          .stepperFill {
+            transition: none;
+          }
+          .blueprintScan {
             display: none;
           }
-          .stepItem,
-          .stepItem::before,
-          .stepNum,
-          .stepName,
-          .mobileStepPill {
-            transition: none !important;
-          }
-          /* Skip boot animation entirely — JS sets hasBooted=true immediately */
           .processBlueprint:not(.isBooted) .processHeader,
-          .processBlueprint:not(.isBooted) .processGrid,
-          .processBlueprint:not(.isBooted) .mobileStepNav,
-          .processBlueprint:not(.isBooted) .mobileStepCard {
+          .processBlueprint:not(.isBooted) .stepper,
+          .processBlueprint:not(.isBooted) .processBody {
             opacity: 1;
           }
           .processBlueprint.isBooted .processHeader,
-          .processBlueprint.isBooted .processGrid,
-          .processBlueprint.isBooted .mobileStepNav,
-          .processBlueprint.isBooted .mobileStepCard,
+          .processBlueprint.isBooted .stepper,
+          .processBlueprint.isBooted .processBody,
           .processBlueprint.isBooted .bootLine,
           .processBlueprint.isBooted .bootGlow,
           .processBlueprint.isBooted .bootFlicker {

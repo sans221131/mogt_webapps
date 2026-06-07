@@ -741,13 +741,13 @@ export default function SelectedWorkVault() {
       {/* Section heading */}
       <div className="vaultHead vaultReveal">
         <span className="vaultEyebrow">
-          <Decode text="SECTION B" run={decodeRun} />
+          <Decode text="SECTION B / SELECTED WORK" run={decodeRun} />
         </span>
         <h2 className="vaultHeading">
-          <span className="vaultHeadingInner">Selected Work</span>
+          <span className="vaultHeadingInner">Systems We Have Shipped, Shaped, or Rebuilt</span>
         </h2>
         <p className="vaultSub">
-          A curated archive of product interfaces, operational systems, and digital platforms.
+          A curated archive of web apps, platforms, dashboards, and product systems across industries.
         </p>
       </div>
 

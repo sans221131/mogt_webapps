@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useLayoutEffect, useState, useCallback } from 'react';
 import {
   motion,
   AnimatePresence,
@@ -357,241 +357,186 @@ export default function TrustEngineSection() {
       initial="hidden"
       animate={show}
     >
-      {/* background grid */}
+      {/* background grid + faint words */}
       <div className="teBg" aria-hidden="true" />
       <span className="teBgW teBgW1" aria-hidden="true">TRUST</span>
       <span className="teBgW teBgW2" aria-hidden="true">SIGNAL</span>
-      <span className="teBgW teBgW3" aria-hidden="true">MATRIX</span>
 
       <div className="teInner">
 
-      {/* ── header ──────────────────────────────────────────────────── */}
-      <header className="teHead">
-        <motion.span className="teLabel" variants={riseV}>SECTION D / TRUST ENGINE</motion.span>
-        <motion.h2 className="teH2" variants={riseV}>WHY TEAMS CHOOSE US</motion.h2>
-        <motion.p className="teSub" variants={riseV}>
-          Clearer decisions. Lower build risk. Interfaces that survive real users.
-        </motion.p>
-        <motion.div className="teMeta" variants={riseV}>
-          <span className="teMetaChip">TRUST INDEX: <Counter value={sig.strength} animate={entered} />%</span>
-          <span className="teMetaChip">BUILD RISK: LOW</span>
-          <span className="teMetaChip">STATUS: VERIFIED</span>
-        </motion.div>
-      </header>
+        {/* ── header ──────────────────────────────────────────────────── */}
+        <header className="teHead">
+          <motion.span className="teLabel" variants={riseV}>SECTION D / TRUST ENGINE</motion.span>
+          <div className="teHeadRow">
+            <motion.h2 className="teH2" variants={riseV}>WHY TEAMS CHOOSE US</motion.h2>
+            <motion.div className="teMeta" variants={riseV}>
+              <span className="teMetaChip"><i>TRUST INDEX</i><b><Counter value={sig.strength} animate={entered} />%</b></span>
+              <span className="teMetaChip"><i>BUILD RISK</i><b>LOW</b></span>
+              <span className="teMetaChip"><i>STATUS</i><b>VERIFIED</b></span>
+            </motion.div>
+          </div>
+          <motion.p className="teSub" variants={riseV}>
+            Clearer decisions. Lower build risk. Interfaces that survive real users.
+          </motion.p>
+        </header>
 
-      {/* ── desktop 3-col ───────────────────────────────────────────── */}
-      <div className="teGrid">
+        {/* ── body: signals · core · detail ───────────────────────────── */}
+        <div className="teBody">
 
-        {/* LEFT */}
-        <motion.div className="teLeft" variants={riseLeftV}>
-          <div className="teColLbl">CORE SIGNALS</div>
-          {SIGNALS.map((s, i) => {
-            const active = activeIndex === i;
-            const locked = lockedIndex === i;
-            return (
-              <motion.div
-                key={s.id}
-                className={`teRow${active ? ' teRowOn' : ''}${locked ? ' teRowLocked' : ''}`}
-                onMouseEnter={() => handleHover(i)}
-                onMouseLeave={handleLeave}
-                onClick={() => handleClick(i)}
-                role="button" tabIndex={0}
-                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') handleClick(i); }}
-                aria-pressed={locked}
-                aria-label={`Signal ${s.id}: ${s.name}`}
-                whileHover={reducedMotion ? undefined : { x: 6 }}
-                transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-              >
-                {active && <span className="teScan" aria-hidden="true" />}
-                {active && <span className="teCnx"  aria-hidden="true" />}
-
-                <div className="teRowTop">
-                  <span className="teNum">{s.id}</span>
-                  <span className="teName">{s.name}</span>
-                  <span className={`teChip teChip-${s.status.toLowerCase()}`}>{s.status}</span>
-                </div>
-
-                <AnimatePresence initial={false}>
-                  {active && (
-                    <motion.p
-                      className="teRowTxt"
-                      initial={{ opacity: 0, height: 0, marginTop: 0, marginBottom: 0 }}
-                      animate={{ opacity: 1, height: 'auto', marginTop: 10, marginBottom: 8 }}
-                      exit={{ opacity: 0, height: 0, marginTop: 0, marginBottom: 0 }}
-                      transition={{ duration: 0.5, ease: EASE_OUT }}
-                    >
-                      {s.text}
-                    </motion.p>
-                  )}
-                </AnimatePresence>
-
-                <div className="teMeter">
-                  <div className="teMeterT">
-                    <motion.div
-                      className="teMeterF"
-                      animate={{ width: `${active ? s.strength : Math.round(s.strength * 0.2)}%` }}
-                      transition={{ duration: 0.8, ease: EASE_OUT }}
-                    />
+          {/* LEFT — core signals selector */}
+          <motion.div className="teSignals" variants={riseLeftV}>
+            <div className="teColLbl">CORE SIGNALS</div>
+            <div className="teList">
+              {SIGNALS.map((s, i) => {
+                const active = activeIndex === i;
+                const locked = lockedIndex === i;
+                return (
+                  <div
+                    key={s.id}
+                    className={`teRow${active ? ' teRowOn' : ''}${locked ? ' teRowLocked' : ''}`}
+                    onMouseEnter={() => handleHover(i)}
+                    onMouseLeave={handleLeave}
+                    onClick={() => handleClick(i)}
+                    role="button" tabIndex={0}
+                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') handleClick(i); }}
+                    aria-pressed={locked}
+                    aria-label={`Signal ${s.id}: ${s.name}`}
+                  >
+                    {active && <span className="teScan" aria-hidden="true" />}
+                    {active && <span className="teCnx" aria-hidden="true" />}
+                    <div className="teRowTop">
+                      <span className="teNum">{s.id}</span>
+                      <span className="teName">{s.name}</span>
+                      <span className={`teChip teChip-${s.status.toLowerCase()}`}>{s.status}</span>
+                    </div>
+                    <div className="teMeter">
+                      <div className="teMeterT">
+                        <motion.div
+                          className="teMeterF"
+                          animate={{ width: `${active ? s.strength : Math.round(s.strength * 0.22)}%` }}
+                          transition={{ duration: 0.8, ease: EASE_OUT }}
+                        />
+                      </div>
+                      <span className="teMeterN">{s.strength}</span>
+                    </div>
                   </div>
-                  <span className="teMeterN">{s.strength}</span>
-                </div>
-              </motion.div>
-            );
-          })}
-        </motion.div>
-
-        {/* CENTER */}
-        <motion.div className="teCenter" variants={scaleInV}>
-          <b className="tcBr tcBrTL" aria-hidden="true" /><b className="tcBr tcBrTR" aria-hidden="true" />
-          <b className="tcBr tcBrBL" aria-hidden="true" /><b className="tcBr tcBrBR" aria-hidden="true" />
-
-          <div className="tcVis">
-            {isMounted && <TrustCoreSVG activeIndex={activeIndex} reducedMotion={reducedMotion} />}
-          </div>
-
-          <div className="tcReadout">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeIndex}
-                className="tcReadoutInner"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.4, ease: EASE_OUT }}
-              >
-                {sig.coreReadout.map((r, i) => (
-                  <div key={i} className="tcRRow">
-                    <span className="tcRKey">{r.label}</span>
-                    <span className="tcRVal">{r.value}</span>
-                  </div>
-                ))}
-              </motion.div>
-            </AnimatePresence>
-          </div>
-
-          <div className="tcFoot">
-            <span>SIGNAL {sig.id} / 06</span>
-            <span>{sig.status}</span>
-          </div>
-        </motion.div>
-
-        {/* RIGHT */}
-        <motion.div className="teRight" variants={riseRightV}>
-          <div className="tmHdr">
-            <span className="tmHdrTxt">ACTIVE SIGNAL</span>
-            <div className="tmLive"><span className="tmDot" aria-hidden="true" /><span>LIVE</span></div>
-          </div>
-
-          <div className="tmBody">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeIndex}
-                initial={{ opacity: 0, x: 18, filter: 'blur(6px)' }}
-                animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
-                exit={{ opacity: 0, x: -18, filter: 'blur(6px)' }}
-                transition={{ duration: 0.45, ease: EASE_OUT }}
-              >
-                <div className="tmRow">
-                  <span className="tmKey">ACTIVE SIGNAL</span>
-                  <span className="tmVal">{sig.name}</span>
-                </div>
-                <div className="tmDiv" />
-                <div className="tmRow">
-                  <span className="tmKey">RISK REMOVED</span>
-                  <span className="tmValB">{sig.riskRemoved}</span>
-                </div>
-                <div className="tmDiv" />
-                <div className="tmRow">
-                  <span className="tmKey">PROOF OUTPUT</span>
-                  <span className="tmValB">{sig.proofOutput}</span>
-                </div>
-                <div className="tmDiv" />
-                <div className="tmRow">
-                  <span className="tmKey">RESULT</span>
-                  <span className="tmValB">{sig.result}</span>
-                </div>
-              </motion.div>
-            </AnimatePresence>
-          </div>
-
-        </motion.div>
-
-      </div>
-
-      {/* ── mobile stacked ──────────────────────────────────────────── */}
-      <div className="teMob">
-        <motion.div className="tmiTop" variants={riseV}>
-          <div className="tmiTopHdr">
-            <span>TRUST ENGINE</span>
-            <span className="tmDot" aria-hidden="true" />
-          </div>
-          {sig.coreReadout.map((r, i) => (
-            <div key={i} className="tmiTopRow">
-              <span className="tmiTK">{r.label}</span>
-              <span className="tmiTV">{r.value}</span>
-            </div>
-          ))}
-        </motion.div>
-
-        {SIGNALS.map((s, i) => (
-          <motion.div
-            key={s.id}
-            className={`tmiCard${activeIndex === i ? ' tmiCardOn' : ''}`}
-            onClick={() => setActiveIndex(activeIndex === i ? 0 : i)}
-            variants={riseV}
-            whileTap={reducedMotion ? undefined : { scale: 0.985 }}
-          >
-            <div className="tmiCardTop">
-              <span className="tmiNum">{s.id}</span>
-              <span className="tmiName">{s.name}</span>
-              <span className={`teChip teChip-${s.status.toLowerCase()}`}>{s.status}</span>
-            </div>
-            <p className="tmiTxt">{s.text}</p>
-            <div className="tmiRow2">
-              <span className="tmKey">RISK REMOVED</span>
-              <span className="tmiVal2">{s.riskRemoved}</span>
-            </div>
-            <div className="tmiRow2">
-              <span className="tmKey">PROOF OUTPUT</span>
-              <span className="tmiVal2">{s.proofOutput}</span>
-            </div>
-            <div className="tmiMeter">
-              <div className="teMeterT teMeterTFull">
-                <motion.div
-                  className="teMeterF"
-                  initial={{ width: 0 }}
-                  animate={{ width: entered ? `${s.strength}%` : 0 }}
-                  transition={{ duration: 0.9, ease: EASE_OUT, delay: 0.1 + i * 0.05 }}
-                />
-              </div>
-              <span className="teMeterN">{s.strength}</span>
+                );
+              })}
             </div>
           </motion.div>
-        ))}
-      </div>
+
+          {/* CENTER — trust core */}
+          <motion.div className="teCore" variants={scaleInV}>
+            <b className="tcBr tcBrTL" aria-hidden="true" /><b className="tcBr tcBrTR" aria-hidden="true" />
+            <b className="tcBr tcBrBL" aria-hidden="true" /><b className="tcBr tcBrBR" aria-hidden="true" />
+
+            <div className="tcVis">
+              {isMounted && <TrustCoreSVG activeIndex={activeIndex} reducedMotion={reducedMotion} />}
+            </div>
+
+            <div className="tcReadout">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeIndex}
+                  className="tcReadoutInner"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.4, ease: EASE_OUT }}
+                >
+                  {sig.coreReadout.map((r, i) => (
+                    <div key={i} className="tcRRow">
+                      <span className="tcRKey">{r.label}</span>
+                      <span className="tcRVal">{r.value}</span>
+                    </div>
+                  ))}
+                </motion.div>
+              </AnimatePresence>
+            </div>
+
+            <div className="tcFoot">
+              <span>SIGNAL {sig.id} / 06</span>
+              <span>{sig.status}</span>
+            </div>
+          </motion.div>
+
+          {/* RIGHT — active signal detail */}
+          <motion.div className="teDetail" variants={riseRightV}>
+            <div className="tmHdr">
+              <span className="tmHdrTxt">ACTIVE SIGNAL</span>
+              <div className="tmLive"><span className="tmDot" aria-hidden="true" /><span>LIVE</span></div>
+            </div>
+
+            <div className="tmBody">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeIndex}
+                  className="tmBodyInner"
+                  initial={{ opacity: 0, x: 18, filter: 'blur(6px)' }}
+                  animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
+                  exit={{ opacity: 0, x: -18, filter: 'blur(6px)' }}
+                  transition={{ duration: 0.45, ease: EASE_OUT }}
+                >
+                  <div className="tmRow tmRowHead">
+                    <span className="tmKey">SIGNAL {sig.id}</span>
+                    <span className="tmVal">{sig.name}</span>
+                  </div>
+                  <p className="tmDesc">{sig.text}</p>
+                  <div className="tmDiv" />
+                  <div className="tmRow">
+                    <span className="tmKey">RISK REMOVED</span>
+                    <span className="tmValB">{sig.riskRemoved}</span>
+                  </div>
+                  <div className="tmDiv" />
+                  <div className="tmRow">
+                    <span className="tmKey">PROOF OUTPUT</span>
+                    <span className="tmValB">{sig.proofOutput}</span>
+                  </div>
+                  <div className="tmDiv" />
+                  <div className="tmRow">
+                    <span className="tmKey">RESULT</span>
+                    <span className="tmValB">{sig.result}</span>
+                  </div>
+                </motion.div>
+              </AnimatePresence>
+            </div>
+          </motion.div>
+
+        </div>
 
       </div>{/* /teInner */}
 
-      {/* ── styles ──────────────────────────────────────────────────── */}
-      <style jsx>{`
+      {/* ── styles ──────────────────────────────────────────────────────
+          NOTE: `global` is required — several layout elements here are
+          framer-motion components (motion.div/span/h2/p). styled-jsx only
+          adds its scoping class to native host elements, so scoped rules
+          silently miss every motion.* node (e.g. .teCore display:none on
+          mobile, panel borders). All class names are uniquely te/tm/tc-
+          prefixed, so global scope is safe here. */}
+      <style jsx global>{`
         /* root */
         .te {
           position: relative;
           width: 100%;
           height: 100%;
-          background: #0a0a0a;
+          background:
+            radial-gradient(120% 90% at 50% -10%, rgba(255,255,255,0.03), transparent 55%),
+            #0a0a0a;
           color: #ededed;
           overflow: hidden;
           font-family: var(--font-geist-mono, 'Courier New', monospace);
         }
 
         .teInner {
+          position: relative;
+          z-index: 2;
           width: min(calc(100% - 40px), 1200px);
           margin-inline: auto;
           display: flex;
           flex-direction: column;
-          justify-content: center;
-          padding: clamp(36px, 6vh, 76px) 0;
+          gap: clamp(16px, 2.6vh, 30px);
+          padding-top: 84px;
+          padding-bottom: clamp(20px, 3vh, 38px);
           height: 100%;
           box-sizing: border-box;
         }
@@ -600,9 +545,11 @@ export default function TrustEngineSection() {
         .teBg {
           position: absolute; inset: 0; z-index: 0; pointer-events: none;
           background-image:
-            linear-gradient(rgba(255,255,255,0.022) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,0.022) 1px, transparent 1px);
+            linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
           background-size: 56px 56px;
+          mask-image: radial-gradient(circle at 50% 40%, #000 35%, transparent 80%);
+          -webkit-mask-image: radial-gradient(circle at 50% 40%, #000 35%, transparent 80%);
         }
 
         /* faint bg words */
@@ -611,67 +558,99 @@ export default function TrustEngineSection() {
           font-weight: 900; letter-spacing: 0.22em; white-space: nowrap;
           font-family: var(--font-geist-mono, monospace);
         }
-        .teBgW1 { font-size: 190px; color: rgba(255,255,255,0.011); top: 26%; left: 50%; transform: translate(-50%, -50%); }
-        .teBgW2 { font-size: 120px; color: rgba(255,255,255,0.008); bottom: 6%;  right: -4%; }
-        .teBgW3 { font-size: 90px;  color: rgba(255,255,255,0.007); top: 4%;     left: -2%; }
+        .teBgW1 { font-size: clamp(120px, 18vw, 210px); color: rgba(255,255,255,0.011); top: 40%; left: 50%; transform: translate(-50%, -50%); }
+        .teBgW2 { font-size: clamp(80px, 11vw, 130px); color: rgba(255,255,255,0.008); bottom: 4%; right: -3%; }
 
-        /* header */
-        .teHead { position: relative; z-index: 2; margin-bottom: clamp(24px, 4vh, 52px); }
+        /* ── header ──────────────────────────────────────────────────── */
+        .teHead { position: relative; z-index: 2; flex-shrink: 0; }
 
         .teLabel {
           display: block; font-size: 11px; letter-spacing: 0.26em;
-          color: rgba(255,255,255,0.4); text-transform: uppercase; margin-bottom: 22px;
+          color: rgba(255,255,255,0.4); text-transform: uppercase; margin-bottom: 16px;
+        }
+
+        .teHeadRow {
+          display: flex;
+          align-items: flex-end;
+          justify-content: space-between;
+          gap: 24px;
+          flex-wrap: wrap;
         }
 
         .teH2 {
-          font-size: clamp(30px, 3.4vw, 52px); font-weight: 700;
-          letter-spacing: 0.06em; text-transform: uppercase;
-          margin: 0 0 22px; color: rgba(255,255,255,0.97);
-          font-family: var(--font-geist-mono, monospace); line-height: 1.04;
+          font-size: clamp(26px, 3vw, 46px); font-weight: 700;
+          letter-spacing: 0.05em; text-transform: uppercase;
+          margin: 0; color: rgba(255,255,255,0.97);
+          font-family: var(--font-geist-mono, monospace); line-height: 1.02;
         }
 
         .teSub {
-          font-size: 15px; line-height: 1.74; color: rgba(255,255,255,0.5);
-          max-width: 560px; margin: 0 0 28px;
+          font-size: clamp(13px, 1.05vw, 15px); line-height: 1.6; color: rgba(255,255,255,0.5);
+          max-width: 620px; margin: 14px 0 0;
           font-family: var(--font-geist-sans, sans-serif);
         }
 
-        .teMeta { display: flex; gap: 12px; flex-wrap: wrap; }
+        .teMeta { display: flex; gap: 10px; flex-wrap: wrap; }
 
         .teMetaChip {
-          font-size: 9.5px; letter-spacing: 0.13em; color: rgba(255,255,255,0.42);
-          border: 1px solid rgba(255,255,255,0.13); padding: 6px 12px;
+          display: inline-flex; align-items: center; gap: 8px;
+          font-size: 9.5px; letter-spacing: 0.12em; color: rgba(255,255,255,0.42);
+          border: 1px solid rgba(255,255,255,0.13); padding: 6px 11px;
           font-family: var(--font-geist-mono, monospace); text-transform: uppercase;
         }
+        .teMetaChip i { font-style: normal; color: rgba(255,255,255,0.34); }
+        .teMetaChip b { font-weight: 700; color: rgba(255,255,255,0.78); }
 
-        /* 3-col grid */
-        .teGrid {
+        /* ── body: three separated instrument panels ─────────────────── */
+        .teBody {
           position: relative; z-index: 2;
-          display: grid; grid-template-columns: 1fr 320px 1fr;
-          gap: 32px; align-items: start;
+          flex: 1; min-height: 0;
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) minmax(0, 300px) minmax(0, 1fr);
+          gap: clamp(12px, 1.4vw, 20px);
+        }
+
+        /* ── LEFT: signals selector ──────────────────────────────────── */
+        .teSignals {
+          display: flex; flex-direction: column;
+          border: 1px solid rgba(255,255,255,0.1);
+          padding: clamp(14px, 2vh, 20px) clamp(14px, 1.6vw, 20px);
+          min-width: 0; min-height: 0;
+          overflow: hidden;
         }
 
         .teColLbl {
-          font-size: 9.5px; letter-spacing: 0.2em; color: rgba(255,255,255,0.26);
-          text-transform: uppercase; margin-bottom: 16px;
+          font-size: 9.5px; letter-spacing: 0.2em; color: rgba(255,255,255,0.28);
+          text-transform: uppercase; margin-bottom: 12px; flex-shrink: 0;
           font-family: var(--font-geist-mono, monospace);
         }
 
-        /* signal rows */
-        .teLeft { display: flex; flex-direction: column; gap: 10px; }
+        .teList { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 
         .teRow {
-          position: relative; border: 1px solid rgba(255,255,255,0.09);
-          padding: 18px 20px; cursor: pointer; overflow: hidden;
-          opacity: 0.5; user-select: none; outline: none;
+          position: relative; flex: 1; min-height: 0;
+          display: flex; flex-direction: column; justify-content: center; gap: 11px;
+          padding: 10px 14px;
+          border: 1px solid transparent;
+          border-bottom: 1px solid rgba(255,255,255,0.06);
+          cursor: pointer; overflow: hidden;
+          opacity: 0.55; user-select: none; outline: none;
           transition: border-color 0.25s ease, background 0.25s ease, opacity 0.25s ease;
         }
-        .teRow:focus-visible { outline: 1px solid rgba(255,255,255,0.36); outline-offset: 2px; }
-        .teRow:hover  { border-color: rgba(255,255,255,0.24); opacity: 0.85; background: rgba(255,255,255,0.022); }
-        .teRowOn      { border-color: rgba(255,255,255,0.34) !important; opacity: 1 !important; background: rgba(255,255,255,0.03) !important; }
-        .teRowLocked  { border-color: rgba(255,255,255,0.55) !important; }
+        .teRow:last-child { border-bottom: 1px solid transparent; }
+        .teRow:focus-visible { outline: 1px solid rgba(255,255,255,0.36); outline-offset: -2px; }
+        .teRow:hover { opacity: 0.85; background: rgba(255,255,255,0.02); }
+        .teRowOn {
+          opacity: 1 !important;
+          background: rgba(255,255,255,0.035) !important;
+          border-color: rgba(255,255,255,0.16) !important;
+        }
+        .teRowOn::before {
+          content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px;
+          background: rgba(255,255,255,0.7);
+        }
+        .teRowLocked { border-color: rgba(255,255,255,0.4) !important; }
 
-        /* scanline pass */
         .teScan {
           position: absolute; inset: 0; pointer-events: none;
           background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.05) 45%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.05) 55%, transparent 100%);
@@ -683,20 +662,18 @@ export default function TrustEngineSection() {
         }
 
         .teCnx {
-          position: absolute; top: 50%; right: 0;
-          width: 32px; height: 1px;
+          position: absolute; top: 50%; right: 0; width: 22px; height: 1px;
           background: linear-gradient(90deg, rgba(255,255,255,0.38), transparent);
-          pointer-events: none;
+          pointer-events: none; display: none;
         }
 
-        .teRowTop { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+        .teRowTop { display: flex; align-items: center; gap: 12px; }
 
-        .teNum  { font-size: 11px; letter-spacing: 0.1em; color: rgba(255,255,255,0.34); font-family: var(--font-geist-mono, monospace); min-width: 22px; }
-        .teName { font-size: 13px; letter-spacing: 0.09em; color: rgba(255,255,255,0.92); text-transform: uppercase; flex: 1; font-family: var(--font-geist-mono, monospace); }
+        .teNum  { font-size: 11px; letter-spacing: 0.1em; color: rgba(255,255,255,0.34); font-family: var(--font-geist-mono, monospace); min-width: 20px; }
+        .teName { font-size: 12.5px; letter-spacing: 0.07em; color: rgba(255,255,255,0.9); text-transform: uppercase; flex: 1; min-width: 0; font-family: var(--font-geist-mono, monospace); }
 
-        /* status chips */
         .teChip {
-          font-size: 9px; letter-spacing: 0.1em; padding: 4px 9px;
+          font-size: 8.5px; letter-spacing: 0.1em; padding: 4px 8px;
           border: 1px solid; text-transform: uppercase; white-space: nowrap;
           font-family: var(--font-geist-mono, monospace);
         }
@@ -705,39 +682,37 @@ export default function TrustEngineSection() {
         .teChip-stable   { color: rgba(255,255,255,0.6);  border-color: rgba(255,255,255,0.19); }
         .teChip-ready    { color: rgba(255,255,255,0.7);  border-color: rgba(255,255,255,0.24); }
 
-        .teRowTxt {
-          font-size: 13px; line-height: 1.62; color: rgba(255,255,255,0.55);
-          overflow: hidden; font-family: var(--font-geist-sans, sans-serif);
-        }
-
-        .teMeter { display: flex; align-items: center; gap: 12px; margin-top: 14px; }
+        .teMeter { display: flex; align-items: center; gap: 11px; }
         .teMeterT { flex: 1; height: 3px; background: rgba(255,255,255,0.08); overflow: hidden; }
         .teMeterTFull { flex: 1; height: 3px; background: rgba(255,255,255,0.08); overflow: hidden; }
         .teMeterF { height: 100%; background: rgba(255,255,255,0.66); }
-        .teMeterN { font-size: 10px; color: rgba(255,255,255,0.38); font-family: var(--font-geist-mono, monospace); min-width: 26px; text-align: right; }
+        .teMeterN { font-size: 10px; color: rgba(255,255,255,0.4); font-family: var(--font-geist-mono, monospace); min-width: 24px; text-align: right; }
 
-        /* center col */
-        .teCenter {
-          position: relative; border: 1px solid rgba(255,255,255,0.12);
-          padding: 24px 22px 20px;
-          display: flex; flex-direction: column; align-items: center;
+        /* ── CENTER: core ────────────────────────────────────────────── */
+        .teCore {
+          position: relative;
+          border: 1px solid rgba(255,255,255,0.1);
+          padding: clamp(16px, 2.4vh, 26px) clamp(16px, 1.8vw, 24px);
+          display: flex; flex-direction: column; min-width: 0; min-height: 0;
+          overflow: hidden;
         }
 
-        /* corner brackets */
-        .tcBr { position: absolute; width: 14px; height: 14px; border-style: solid; border-color: rgba(255,255,255,0.34); display: block; }
-        .tcBrTL { top: -1px;    left: -1px;  border-width: 1.5px 0 0 1.5px; }
-        .tcBrTR { top: -1px;    right: -1px; border-width: 1.5px 1.5px 0 0; }
-        .tcBrBL { bottom: -1px; left: -1px;  border-width: 0 0 1.5px 1.5px; }
-        .tcBrBR { bottom: -1px; right: -1px; border-width: 0 1.5px 1.5px 0; }
+        .tcBr { position: absolute; width: 13px; height: 13px; border-style: solid; border-color: rgba(255,255,255,0.34); display: block; }
+        .tcBrTL { top: 8px;    left: 8px;   border-width: 1.5px 0 0 1.5px; }
+        .tcBrTR { top: 8px;    right: 8px;  border-width: 1.5px 1.5px 0 0; }
+        .tcBrBL { bottom: 8px; left: 8px;   border-width: 0 0 1.5px 1.5px; }
+        .tcBrBR { bottom: 8px; right: 8px;  border-width: 0 1.5px 1.5px 0; }
 
-
-        .tcVis { width: 100%; aspect-ratio: 1; }
+        .tcVis {
+          flex: 1; min-height: 0;
+          display: flex; align-items: center; justify-content: center;
+        }
 
         .tcReadout {
           width: 100%; border-top: 1px solid rgba(255,255,255,0.08);
-          margin-top: 16px; padding-top: 16px;
+          margin-top: 14px; padding-top: 14px; flex-shrink: 0;
         }
-        .tcReadoutInner { display: flex; flex-direction: column; gap: 10px; }
+        .tcReadoutInner { display: flex; flex-direction: column; gap: 9px; }
 
         .tcRRow { display: flex; justify-content: space-between; align-items: center; }
         .tcRKey { font-size: 9.5px; letter-spacing: 0.1em; color: rgba(255,255,255,0.3); text-transform: uppercase; font-family: var(--font-geist-mono, monospace); }
@@ -745,21 +720,24 @@ export default function TrustEngineSection() {
 
         .tcFoot {
           width: 100%; display: flex; justify-content: space-between;
-          margin-top: 18px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.06);
-          font-size: 9px; letter-spacing: 0.1em; color: rgba(255,255,255,0.2);
+          margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.06);
+          font-size: 9px; letter-spacing: 0.1em; color: rgba(255,255,255,0.24);
           text-transform: uppercase; font-family: var(--font-geist-mono, monospace);
+          flex-shrink: 0;
         }
 
-        /* right matrix */
-        .teRight {
-          border: 1px solid rgba(255,255,255,0.12); padding: 24px 26px;
-          display: flex; flex-direction: column;
+        /* ── RIGHT: active signal detail ─────────────────────────────── */
+        .teDetail {
+          border: 1px solid rgba(255,255,255,0.1);
+          padding: clamp(16px, 2.4vh, 24px) clamp(16px, 1.8vw, 26px);
+          display: flex; flex-direction: column; min-width: 0; min-height: 0;
+          overflow: hidden;
         }
 
         .tmHdr {
           display: flex; justify-content: space-between; align-items: center;
-          margin-bottom: 18px; padding-bottom: 14px;
-          border-bottom: 1px solid rgba(255,255,255,0.07);
+          margin-bottom: 16px; padding-bottom: 13px;
+          border-bottom: 1px solid rgba(255,255,255,0.08); flex-shrink: 0;
         }
         .tmHdrTxt {
           font-size: 10.5px; letter-spacing: 0.16em; color: rgba(255,255,255,0.45);
@@ -777,9 +755,14 @@ export default function TrustEngineSection() {
         }
         @keyframes tmBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0.15; } }
 
-        .tmBody { display: flex; flex-direction: column; flex: 1; }
+        .tmBody { flex: 1; min-height: 0; display: flex; }
+        .tmBodyInner {
+          flex: 1; min-height: 0;
+          display: flex; flex-direction: column; justify-content: space-between;
+        }
 
-        .tmRow { display: flex; flex-direction: column; gap: 8px; padding: 14px 0; }
+        .tmRow { display: flex; flex-direction: column; gap: 8px; }
+        .tmRowHead { gap: 6px; }
         .tmDiv { height: 1px; background: rgba(255,255,255,0.06); }
 
         .tmKey {
@@ -787,158 +770,69 @@ export default function TrustEngineSection() {
           text-transform: uppercase; font-family: var(--font-geist-mono, monospace);
         }
         .tmVal {
-          font-size: 14px; letter-spacing: 0.06em; color: rgba(255,255,255,0.92);
+          font-size: clamp(16px, 1.5vw, 20px); letter-spacing: 0.05em; color: rgba(255,255,255,0.95);
           text-transform: uppercase; font-family: var(--font-geist-mono, monospace);
-          line-height: 1.3;
+          line-height: 1.2;
+        }
+        .tmDesc {
+          margin: 0; font-size: clamp(13px, 1vw, 14.5px); color: rgba(255,255,255,0.6);
+          font-family: var(--font-geist-sans, sans-serif); line-height: 1.62;
         }
         .tmValB {
-          font-size: 14px; color: rgba(255,255,255,0.66); text-transform: none;
+          font-size: clamp(13px, 1vw, 14.5px); color: rgba(255,255,255,0.66); text-transform: none;
           font-family: var(--font-geist-sans, sans-serif); letter-spacing: 0;
-          line-height: 1.6;
+          line-height: 1.55;
         }
 
-        /* mobile */
-        .teMob { display: none; position: relative; z-index: 2; }
+        /* ── Responsive ──────────────────────────────────────────────── */
 
-        .tmiTop {
-          border: 1px solid rgba(255,255,255,0.14); padding: 20px 20px; margin-bottom: 24px;
+        /* Tablet: narrow the core column */
+        @media (max-width: 1080px) {
+          .teBody { grid-template-columns: minmax(0, 1fr) minmax(0, 260px) minmax(0, 1fr); }
         }
-        .tmiTopHdr {
-          display: flex; justify-content: space-between; align-items: center;
-          margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.07);
-          font-size: 10px; letter-spacing: 0.16em; color: rgba(255,255,255,0.38);
-          text-transform: uppercase; font-family: var(--font-geist-mono, monospace);
-        }
-        .tmiTopRow {
-          display: flex; justify-content: space-between; padding: 9px 0;
-          font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
-          font-family: var(--font-geist-mono, monospace); border-bottom: 1px solid rgba(255,255,255,0.04);
-        }
-        .tmiTK { color: rgba(255,255,255,0.32); }
-        .tmiTV { color: rgba(255,255,255,0.86); }
 
-        .tmiCard {
-          border: 1px solid rgba(255,255,255,0.09); padding: 20px 20px;
-          margin-bottom: 12px; transition: border-color 0.2s; cursor: pointer;
-        }
-        .tmiCardOn { border-color: rgba(255,255,255,0.28) !important; background: rgba(255,255,255,0.02); }
-
-        .tmiCardTop { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
-        .tmiNum  { font-size: 11px;  letter-spacing: 0.1em; color: rgba(255,255,255,0.34); font-family: var(--font-geist-mono, monospace); }
-        .tmiName { font-size: 13px; letter-spacing: 0.08em; color: rgba(255,255,255,0.92); text-transform: uppercase; flex: 1; font-family: var(--font-geist-mono, monospace); }
-
-        .tmiTxt { font-size: 14px; line-height: 1.62; color: rgba(255,255,255,0.55); margin: 0 0 16px; font-family: var(--font-geist-sans, sans-serif); }
-
-        .tmiRow2 { display: flex; flex-direction: column; gap: 6px; padding: 12px 0; border-top: 1px solid rgba(255,255,255,0.05); }
-        .tmiVal2 { font-size: 13.5px; color: rgba(255,255,255,0.64); line-height: 1.55; font-family: var(--font-geist-sans, sans-serif); }
-
-        .tmiMeter { display: flex; align-items: center; gap: 12px; margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.05); }
-
-        /* responsive */
-        @media (max-width: 1100px) {
-          .teInner { padding: 80px 0 88px; }
-          .teGrid { grid-template-columns: 1fr 280px 1fr; gap: 24px; }
-        }
-        @media (max-width: 900px) {
-          .teInner { padding: 72px 0 80px; }
-          .teGrid { grid-template-columns: 1fr 250px 1fr; gap: 18px; }
-        }
-        @media (max-width: 768px) {
-          /* ── Root: auto height, clamp horizontal overflow ─────────────
-             height: 100% on desktop fills the panel; on mobile it must be
-             auto so content determines the height. overflow: hidden clips
-             the absolutely-positioned bg words that extend past the edge. */
-          .te {
-            height: auto;
-          }
-
+        /* Stacked: drop the radial core, show detail then the selector list.
+           As the panel scrubs, the detail panel updates live and stays in view;
+           the list below mirrors / re-selects the active signal. */
+        @media (max-width: 920px) {
+          .te { height: auto; }
           .teInner {
             width: min(calc(100% - 32px), 1200px);
-            padding: 48px 0 56px;
             height: auto;
-            justify-content: flex-start;
+            padding-top: 72px;
+            padding-bottom: 40px;
+            gap: 18px;
           }
-
-          .teGrid { display: none; }
-          .teMob  { display: flex; flex-direction: column; }
-
-          /* ── Bg words: hide completely on mobile ─────────────────────
-             teBgW2 has right: -4% and teBgW3 has left: -2% — even as
-             absolute elements they can trigger horizontal scroll area. */
           .teBgW { display: none; }
 
-          /* ── Header: tighter vertical spacing ───────────────────────── */
-          .teHead { margin-bottom: 28px; }
+          .teHeadRow { align-items: flex-start; flex-direction: column; gap: 14px; }
 
-          .teH2 {
-            font-size: clamp(24px, 6.5vw, 36px);
-            letter-spacing: 0.04em;
-            margin-bottom: 14px;
+          .teBody {
+            display: flex;
+            flex-direction: column;
           }
+          .teCore { display: none !important; }
 
-          .teSub {
-            font-size: 14px;
-            line-height: 1.65;
-            margin-bottom: 18px;
+          .teDetail { order: 1; }
+          .tmBodyInner { gap: 14px; }
+          .tmBodyInner .tmRow { gap: 6px; }
+
+          .teSignals { order: 2; }
+          /* Natural-height rows on mobile (no flex:1 fight without a fixed parent) */
+          .teList { flex: none; }
+          .teRow {
+            flex: none;
+            min-height: 0;
+            padding: 14px;
+            gap: 10px;
           }
+          .teScan { display: none; }
+        }
 
-          .teMeta { gap: 8px; }
-
-          /* ── Summary block ───────────────────────────────────────────── */
-          .tmiTop {
-            padding: 16px;
-            margin-bottom: 18px;
-            box-sizing: border-box;
-            overflow-x: hidden;
-          }
-
-          .tmiTopHdr {
-            flex-wrap: wrap;
-            gap: 6px;
-          }
-
-          /* ── Individual cards ────────────────────────────────────────── */
-          .tmiCard {
-            padding: 16px;
-            margin-bottom: 10px;
-            box-sizing: border-box;
-            overflow-x: hidden;
-          }
-
-          /* Card header row: allow chip to wrap below if row is too narrow */
-          .tmiCardTop {
-            align-items: flex-start;
-            gap: 8px;
-            margin-bottom: 12px;
-          }
-
-          /* min-width: 0 lets the name shrink so the badge never overflows right */
-          .tmiName {
-            font-size: 14px;
-            min-width: 0;
-          }
-
-          /* Card body */
-          .tmiTxt {
-            font-size: 14px;
-            line-height: 1.65;
-            margin-bottom: 12px;
-          }
-
-          /* Risk Removed / Proof Output rows */
-          .tmiRow2 { padding: 10px 0; }
-
-          .tmiVal2 {
-            font-size: 13px;
-            line-height: 1.6;
-            word-break: break-word;
-          }
-
-          /* Meter row */
-          .tmiMeter {
-            margin-top: 12px;
-            padding-top: 12px;
-          }
+        @media (max-width: 560px) {
+          .teName { font-size: 12px; }
+          .teMetaChip { font-size: 9px; padding: 5px 9px; gap: 6px; }
+          .tmHdr { margin-bottom: 12px; padding-bottom: 11px; }
         }
 
         /* reduced motion */
