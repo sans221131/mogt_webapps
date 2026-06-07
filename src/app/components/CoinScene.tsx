@@ -1279,9 +1279,10 @@ export default function CoinOrbitHero() {
         gsap.set(specializationInnerRef.current, {
           autoAlpha: 0,
           y: () => window.innerHeight * (isMobile ? 0.58 : 0.62),
-          scale: 0.985,
+          scale: 0.94,
           filter: isMobile ? 'blur(22px)' : 'blur(34px)',
           pointerEvents: 'none',
+          transformOrigin: '50% 50%',
         });
 
         gsap.set(specializationHeadingRef.current, { autoAlpha: 1 });
@@ -1307,7 +1308,9 @@ export default function CoinOrbitHero() {
         gsap.set(overlayPanelRefs.current, {
           autoAlpha: 0,
           y: () => window.innerHeight * 0.55,
-          filter: 'blur(24px)',
+          scale: 0.92,
+          filter: 'blur(26px)',
+          transformOrigin: '50% 50%',
         });
 
         gsap.set(systemsIndexLogoRef.current, {
@@ -1338,7 +1341,9 @@ export default function CoinOrbitHero() {
         gsap.set('.vaultReveal', {
           autoAlpha: 0,
           y: isMobile ? 30 : 42,
+          scale: 0.96,
           filter: isMobile ? 'blur(12px)' : 'blur(18px)',
+          transformOrigin: '50% 50%',
         });
 
         gsap.set(sideProgressFillRef.current, {
@@ -1359,6 +1364,11 @@ export default function CoinOrbitHero() {
         const sectionBEnterAt = sectionAHoldUntil + 0.3;
         const panelStep = 2.2;
 
+        // One-shot: fire the Selected Work "archive boot" the first time the
+        // scrubbed playhead reaches Section B. Guarded so scrubbing back and
+        // forth never replays it.
+        let vaultBooted = false;
+
         scrollTimeline = gsap.timeline({
           scrollTrigger: {
             trigger: sectionRef.current,
@@ -1376,6 +1386,11 @@ export default function CoinOrbitHero() {
 
               const timePos = self.animation?.time() ?? 0;
               systemsLogoModelVisible = timePos >= sectionALogoAt && timePos <= sectionBEnterAt + 0.1;
+
+              if (!vaultBooted && timePos >= sectionBEnterAt + 0.12) {
+                vaultBooted = true;
+                window.dispatchEvent(new CustomEvent('vaultBoot'));
+              }
 
               const progress = self.progress;
 
@@ -1456,11 +1471,12 @@ export default function CoinOrbitHero() {
           specializationInnerRef.current,
           {
             autoAlpha: 0,
-            y: -window.innerHeight * 0.12,
-            filter: 'blur(18px)',
+            y: -window.innerHeight * 0.18,
+            scale: 1.05,
+            filter: 'blur(24px)',
             pointerEvents: 'none',
-            duration: 0.35,
-            ease: 'none',
+            duration: 0.42,
+            ease: 'power2.in',
           },
           1.05,
         );
@@ -1482,9 +1498,10 @@ export default function CoinOrbitHero() {
             {
               autoAlpha: 1,
               y: 0,
+              scale: 1,
               filter: 'blur(0px)',
-              duration: 0.58,
-              ease: 'none',
+              duration: 0.72,
+              ease: 'power3.out',
             },
             enterAt,
           );
@@ -1494,10 +1511,11 @@ export default function CoinOrbitHero() {
               panel,
               {
                 autoAlpha: 0,
-                y: -window.innerHeight * 0.18,
-                filter: 'blur(18px)',
-                duration: 0.38,
-                ease: 'none',
+                y: -window.innerHeight * 0.26,
+                scale: 1.06,
+                filter: 'blur(26px)',
+                duration: 0.46,
+                ease: 'power2.in',
               },
               exitAt,
             );
@@ -1508,10 +1526,11 @@ export default function CoinOrbitHero() {
         scrollTimeline?.to('.vaultReveal', {
           autoAlpha: 1,
           y: 0,
+          scale: 1,
           filter: 'blur(0px)',
-          duration: 0.5,
-          stagger: 0.085,
-          ease: 'power2.out',
+          duration: 0.7,
+          stagger: 0.1,
+          ease: 'power3.out',
         }, sectionBEnterAt + 0.12);
 
         scrollTimeline
@@ -1519,29 +1538,29 @@ export default function CoinOrbitHero() {
             autoAlpha: 1,
             scale: 1,
             filter: 'blur(0px)',
-            duration: 0.42,
-            ease: 'none',
+            duration: 0.6,
+            ease: 'power2.out',
           }, sectionALogoAt)
           .to(systemsIntroRef.current, {
             autoAlpha: 1,
             y: 0,
             filter: 'blur(0px)',
-            duration: 0.42,
-            ease: 'none',
+            duration: 0.6,
+            ease: 'power3.out',
           }, sectionAIntroAt)
           .to(systemsIndustryMatrixRef.current, {
             autoAlpha: 1,
             y: 0,
             filter: 'blur(0px)',
-            duration: 0.48,
-            ease: 'none',
+            duration: 0.65,
+            ease: 'power3.out',
           }, sectionAMatrixAt)
           .to(systemsCapabilitiesRef.current, {
             autoAlpha: 1,
             y: 0,
             filter: 'blur(0px)',
-            duration: 0.42,
-            ease: 'none',
+            duration: 0.6,
+            ease: 'power2.out',
           }, sectionACapabilitiesAt);
       }, sectionRef);
 

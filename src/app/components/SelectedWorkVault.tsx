@@ -548,6 +548,65 @@ const FEAT_PREVIEWS: Record<PreviewKind, () => ReactNode> = {
   dashboard: FeatDashboardPreview,
 };
 
+// ── Decode text ───────────────────────────────────────────────────
+// Lightweight "decoding" reveal: scrambles glyphs then settles left→right.
+// Renders the final string on the server / before `run` so there is no layout
+// shift and the text stays accessible. Used for the SECTION B eyebrow, the
+// readout values and the CTA — short monospace strings only.
+
+const DECODE_GLYPHS = '#%&/0123456789<>=*+-▓▒░';
+
+function Decode({
+  text,
+  run,
+  delay = 0,
+  duration = 420,
+  className,
+}: {
+  text: string;
+  run: boolean;
+  delay?: number;
+  duration?: number;
+  className?: string;
+}): ReactNode {
+  const [display, setDisplay] = useState(text);
+
+  // Keep display synced to text whenever the animation isn't running.
+  useEffect(() => {
+    if (!run) setDisplay(text);
+  }, [text, run]);
+
+  useEffect(() => {
+    if (!run) return;
+    let raf = 0;
+    let start = 0;
+    const tick = (ts: number) => {
+      if (!start) start = ts;
+      const t = ts - start;
+      const settled = Math.floor((t / duration) * text.length);
+      let out = '';
+      for (let i = 0; i < text.length; i++) {
+        if (i < settled || text[i] === ' ') out += text[i];
+        else out += DECODE_GLYPHS[(Math.random() * DECODE_GLYPHS.length) | 0];
+      }
+      setDisplay(out);
+      if (t < duration) raf = requestAnimationFrame(tick);
+      else setDisplay(text);
+    };
+    const timer = window.setTimeout(() => {
+      raf = requestAnimationFrame(tick);
+    }, delay);
+    // Do NOT call setDisplay in cleanup — that can fire setState on an
+    // unmounting component or during a sibling reconciliation pass.
+    return () => {
+      window.clearTimeout(timer);
+      cancelAnimationFrame(raf);
+    };
+  }, [run, text, delay, duration]);
+
+  return <span className={className} aria-label={text}>{display}</span>;
+}
+
 // ── Archive row config ────────────────────────────────────────────
 
 const ARCHIVE_ROWS = [
@@ -568,13 +627,83 @@ export default function SelectedWorkVault() {
   const featCardRef = useRef<HTMLAnchorElement>(null);
   const reducedMotion = useRef(false);
 
+  // ── Archive boot sequence ─────────────────────────────────────
+  // armed  → JS is alive + motion allowed → boot-children start hidden
+  // booted → Section B reached (CoinScene dispatches 'vaultBoot') → play once
+  const vaultRef = useRef<HTMLDivElement>(null);
+  const [armed, setArmed] = useState(false);
+  const [booted, setBooted] = useState(false);
+  const [reduced, setReduced] = useState(false);
+
   useEffect(() => {
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
-    reducedMotion.current = mq.matches;
-    const onChange = (e: MediaQueryListEvent) => { reducedMotion.current = e.matches; };
+    const apply = (m: boolean) => {
+      reducedMotion.current = m;
+      setReduced(m);
+      if (m) {
+        // Reduced motion: skip the choreography, show everything at rest.
+        setArmed(false);
+        setBooted(true);
+      } else {
+        setArmed(true);
+      }
+    };
+    apply(mq.matches);
+    const onChange = (e: MediaQueryListEvent) => apply(e.matches);
     mq.addEventListener('change', onChange);
-    return () => mq.removeEventListener('change', onChange);
+
+    // CoinScene fires this once, the first time Section B scrolls into view.
+    const onBoot = () => setBooted(true);
+    window.addEventListener('vaultBoot', onBoot);
+
+    return () => {
+      mq.removeEventListener('change', onChange);
+      window.removeEventListener('vaultBoot', onBoot);
+    };
   }, []);
+
+  // Desktop-only idle pointer parallax → CSS vars consumed by the featured card.
+  useEffect(() => {
+    if (reduced) return;
+    if (window.matchMedia('(max-width: 640px)').matches) return;
+    if (window.matchMedia('(pointer: coarse)').matches) return;
+    const el = vaultRef.current;
+    if (!el) return;
+    let raf = 0;
+    let px = 0;
+    let py = 0;
+    const onMove = (e: PointerEvent) => {
+      px = (e.clientX - window.innerWidth / 2) / (window.innerWidth / 2);
+      py = (e.clientY - window.innerHeight / 2) / (window.innerHeight / 2);
+      if (!raf) {
+        raf = requestAnimationFrame(() => {
+          raf = 0;
+          el.style.setProperty('--vpx', px.toFixed(3));
+          el.style.setProperty('--vpy', py.toFixed(3));
+        });
+      }
+    };
+    window.addEventListener('pointermove', onMove, { passive: true });
+    return () => {
+      window.removeEventListener('pointermove', onMove);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [reduced]);
+
+  const decodeRun = booted && armed;
+
+  // Re-run the wireframe clip-reveal when the featured project swaps,
+  // without keying the element (which causes React/GSAP DOM conflicts).
+  const previewInnerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!booted || !armed) return;
+    const el = previewInnerRef.current;
+    if (!el) return;
+    el.classList.remove('featPreviewReveal');
+    // One rAF gives the browser a chance to flush the class removal before re-adding.
+    const id = requestAnimationFrame(() => el.classList.add('featPreviewReveal'));
+    return () => cancelAnimationFrame(id);
+  }, [featIdx, booted, armed]);
 
   const handleFeatMouseMove = useCallback((e: React.MouseEvent<HTMLAnchorElement>) => {
     if (reducedMotion.current) return;
@@ -593,12 +722,28 @@ export default function SelectedWorkVault() {
   const handleFeatLeave = useCallback(() => { setIsHovering(false); setTilt({ x: 0, y: 0 }); }, []);
 
   return (
-    <div className="vault" aria-label="Selected work archive">
+    <div
+      ref={vaultRef}
+      className={`vault${armed ? ' vaultArmed' : ''}${booted ? ' isBooted' : ''}`}
+      aria-label="Selected work archive"
+    >
+
+      {/* Archive boot FX — CRT flicker, scan sweep, corner glow, grain burst */}
+      <div className="vaultBootFx" aria-hidden="true">
+        <span className="vaultGrainBurst" />
+        <span className="vaultScanSweep" />
+        <span className="vaultFlicker" />
+        <span className="vaultGlow" />
+      </div>
 
       {/* Section heading */}
       <div className="vaultHead vaultReveal">
-        <span className="vaultEyebrow">SECTION B</span>
-        <h2 className="vaultHeading">Selected Work</h2>
+        <span className="vaultEyebrow">
+          <Decode text="SECTION B" run={decodeRun} />
+        </span>
+        <h2 className="vaultHeading">
+          <span className="vaultHeadingInner">Selected Work</span>
+        </h2>
         <p className="vaultSub">
           A curated archive of product interfaces, operational systems, and digital platforms.
         </p>
@@ -607,7 +752,6 @@ export default function SelectedWorkVault() {
       {/* Featured card */}
       <div className="featWrap vaultReveal">
         <a
-          key={featured.slug}
           ref={featCardRef}
           className={`featCard${isHovering ? ' featCardHover' : ''}`}
           href={`/projects/${featured.slug}`}
@@ -624,6 +768,7 @@ export default function SelectedWorkVault() {
         >
           <span className="featBracketTL" aria-hidden="true" />
           <span className="featBracketBR" aria-hidden="true" />
+          <span className="featBootBorder" aria-hidden="true" />
           <div
             className="featShine"
             style={{
@@ -635,7 +780,10 @@ export default function SelectedWorkVault() {
           />
 
           <div className="featPreview">
-            <FeatPreview />
+            <div ref={previewInnerRef} className="featPreviewInner">
+              <FeatPreview />
+            </div>
+            <span className="featBootScan" aria-hidden="true" />
             <span className="featScanline" aria-hidden="true" />
             <div className="featXray" aria-hidden="true">
               {featured.xray.map((label, li) => (
@@ -647,10 +795,10 @@ export default function SelectedWorkVault() {
               ))}
             </div>
             <div className="featReadout" aria-hidden="true">
-              <span><em>ARCHIVE COUNT </em>{String(PROJECTS.length).padStart(2, '0')}</span>
-              <span><em>ACTIVE FILE   </em>{featured.index}</span>
-              <span><em>MODE          </em>SELECTED WORK</span>
-              <span><em>STATUS        </em>VIEWABLE</span>
+              <span><em>ARCHIVE COUNT </em><Decode text={String(PROJECTS.length).padStart(2, '0')} run={decodeRun} delay={900} /></span>
+              <span><em>ACTIVE FILE   </em><Decode text={featured.index} run={decodeRun} delay={980} /></span>
+              <span><em>MODE          </em><Decode text="SELECTED WORK" run={decodeRun} delay={1060} /></span>
+              <span><em>STATUS        </em><Decode text="VIEWABLE" run={decodeRun} delay={1140} /></span>
             </div>
           </div>
 
@@ -659,7 +807,7 @@ export default function SelectedWorkVault() {
               <span className="featIndexRow">
                 {featured.index}<em> / </em>{featured.category}
               </span>
-              <span className="featTitle">{featured.title}</span>
+              <span className="featTitle"><span className="featTitleInner">{featured.title}</span></span>
               <span className="featTags">
                 {featured.tags.map(tag => (
                   <span key={tag}>{tag}</span>
@@ -696,6 +844,7 @@ export default function SelectedWorkVault() {
                     <a
                       key={`${rowIdx}-${project.slug}-${cardIdx}`}
                       className="archiveCard"
+                      style={{ '--ai': cardIdx } as React.CSSProperties}
                       href={`/projects/${project.slug}`}
                       aria-label={isClone ? undefined : `${project.title} — ${project.category}. Open project.`}
                       aria-hidden={isClone ? true : undefined}
@@ -726,7 +875,7 @@ export default function SelectedWorkVault() {
       {/* Bottom CTA */}
       <div className="vaultCta vaultReveal">
         <a className="vaultCtaLink" href="/projects">
-          VIEW COMPLETE ARCHIVE <em>→</em>
+          <Decode text="VIEW COMPLETE ARCHIVE" run={decodeRun} delay={1200} /> <em>→</em>
         </a>
       </div>
 
@@ -738,7 +887,7 @@ export default function SelectedWorkVault() {
           width: min(94vw, 1120px);
           display: flex;
           flex-direction: column;
-          gap: clamp(10px, 1.4vh, 18px);
+          gap: clamp(14px, 2.1vh, 28px);
           text-align: left;
           pointer-events: none;
           overflow-x: clip;
@@ -754,30 +903,30 @@ export default function SelectedWorkVault() {
         }
 
         .vaultEyebrow {
-          color: rgba(255,255,255,0.38);
+          color: rgba(255,255,255,0.4);
           font-family: ui-monospace, 'Courier New', monospace;
-          font-size: 10px;
+          font-size: 11px;
           font-weight: 800;
-          letter-spacing: 0.2em;
+          letter-spacing: 0.24em;
           text-transform: uppercase;
         }
 
         .vaultHeading {
-          margin: 6px 0 0;
-          color: rgba(255,255,255,0.93);
-          font-size: clamp(20px, 2.4vw, 36px);
-          line-height: 1;
+          margin: 12px 0 0;
+          color: rgba(255,255,255,0.94);
+          font-size: clamp(24px, 2.8vw, 42px);
+          line-height: 1.02;
           font-weight: 380;
           letter-spacing: -0.04em;
           text-transform: uppercase;
         }
 
         .vaultSub {
-          width: min(86vw, 480px);
-          margin: 8px auto 0;
-          color: rgba(255,255,255,0.5);
-          font-size: clamp(10px, 0.82vw, 12px);
-          line-height: 1.5;
+          width: min(86vw, 520px);
+          margin: 14px auto 0;
+          color: rgba(255,255,255,0.52);
+          font-size: clamp(12px, 0.95vw, 14px);
+          line-height: 1.6;
           font-weight: 360;
         }
 
@@ -808,13 +957,25 @@ export default function SelectedWorkVault() {
             0 0 0 1px rgba(255,255,255,0.04),
             0 8px 48px rgba(0,0,0,0.7),
             0 0 64px rgba(255,255,255,0.02);
-          animation: featCardEnter 0.45s cubic-bezier(0.16, 1, 0.3, 1);
-          /* transform + transition handled by inline style (mouse-tracking tilt) */
+          /* Entrance (opacity/scale/blur) handled by GSAP on .featWrap.
+             Layered "assembly" handled by the boot sequence below.
+             transform + transition handled by inline style (mouse-tracking tilt) */
         }
 
-        @keyframes featCardEnter {
-          from { opacity: 0; }
-          to   { opacity: 1; }
+        /* Idle border "breathing" glow — only after the boot completes */
+        .vault.vaultArmed.isBooted .featCard::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          z-index: 1;
+          box-shadow: inset 0 0 0 1px rgba(255,255,255,0);
+          animation: featBreath 6s ease-in-out 1.6s infinite;
+        }
+
+        @keyframes featBreath {
+          0%, 100% { box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02), 0 0 36px rgba(255,255,255,0.012); }
+          50%      { box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06), 0 0 52px rgba(255,255,255,0.03); }
         }
 
         .featCard:hover,
@@ -2761,6 +2922,273 @@ export default function SelectedWorkVault() {
           background: rgba(255,255,255,0.32) !important;
         }
 
+        /* ══════════════════════════════════════════════════════════════
+           ARCHIVE BOOT SEQUENCE
+           - .vaultArmed       : JS alive + motion allowed → boot-children hide
+           - .vaultArmed.isBooted : Section B reached → play the sequence once
+           Reduced motion never sets .vaultArmed, so all of this stays inert
+           and the section renders fully visible & static.
+           ══════════════════════════════════════════════════════════════ */
+
+        /* ── Section boot FX overlay (flicker / sweep / grain / glow) ── */
+        .vaultBootFx {
+          position: absolute;
+          inset: 0;
+          z-index: 40;
+          pointer-events: none;
+          overflow: hidden;
+        }
+
+        .vaultBootFx span {
+          position: absolute;
+          inset: 0;
+          display: block;
+          opacity: 0;
+        }
+
+        .vaultFlicker {
+          background: #fff;
+          mix-blend-mode: overlay;
+        }
+
+        .vaultGrainBurst {
+          background: repeating-linear-gradient(
+            0deg,
+            transparent,
+            transparent 2px,
+            rgba(255,255,255,0.05) 2px,
+            rgba(255,255,255,0.05) 3px
+          );
+        }
+
+        .vaultBootFx .vaultScanSweep {
+          inset: 0 0 auto 0;
+          height: 32%;
+          background: linear-gradient(
+            180deg,
+            transparent,
+            rgba(255,255,255,0.05) 50%,
+            transparent
+          );
+        }
+
+        .vaultGlow {
+          box-shadow: inset 0 0 0 1px rgba(255,255,255,0);
+        }
+
+        .vault.vaultArmed.isBooted .vaultFlicker  { animation: vaultFlicker 0.42s steps(1, end) both; }
+        .vault.vaultArmed.isBooted .vaultGrainBurst { animation: vaultGrain 0.45s ease-out both; }
+        .vault.vaultArmed.isBooted .vaultScanSweep { animation: vaultSweep 0.95s ease-out both; }
+        .vault.vaultArmed.isBooted .vaultGlow      { animation: vaultGlowPulse 0.85s ease-out both; }
+
+        @keyframes vaultFlicker {
+          0% { opacity: 0; } 8% { opacity: 0.06; } 12% { opacity: 0.01; }
+          20% { opacity: 0.05; } 28% { opacity: 0; } 40% { opacity: 0.04; }
+          52% { opacity: 0; } 100% { opacity: 0; }
+        }
+        @keyframes vaultGrain {
+          0% { opacity: 0.45; } 100% { opacity: 0; }
+        }
+        @keyframes vaultSweep {
+          0%   { opacity: 0; transform: translateY(-45%); }
+          15%  { opacity: 1; }
+          85%  { opacity: 1; }
+          100% { opacity: 0; transform: translateY(360%); }
+        }
+        @keyframes vaultGlowPulse {
+          0%   { box-shadow: inset 0 0 0 1px rgba(255,255,255,0), inset 0 0 0 0 rgba(255,255,255,0); }
+          40%  { box-shadow: inset 0 0 0 1px rgba(255,255,255,0.10), inset 0 0 60px 0 rgba(255,255,255,0.05); }
+          100% { box-shadow: inset 0 0 0 1px rgba(255,255,255,0), inset 0 0 0 0 rgba(255,255,255,0); }
+        }
+
+        /* ── Heading reveal ──────────────────────────────────────── */
+        .vaultHeadingInner { display: inline-block; }
+
+        .vault.vaultArmed:not(.isBooted) .vaultEyebrow { opacity: 0; }
+        .vault.vaultArmed:not(.isBooted) .vaultHeadingInner { clip-path: inset(0 100% 0 0); }
+        .vault.vaultArmed:not(.isBooted) .vaultSub { opacity: 0; }
+
+        .vault.vaultArmed.isBooted .vaultEyebrow {
+          animation: vaultEyebrowGlitch 0.45s steps(2, end) 0.05s 1 both;
+        }
+        .vault.vaultArmed.isBooted .vaultHeadingInner {
+          animation: vaultWipe 0.6s cubic-bezier(0.7, 0, 0.2, 1) 0.12s both;
+        }
+        .vault.vaultArmed.isBooted .vaultSub {
+          animation: vaultFadeIn 0.5s ease 0.32s both;
+        }
+
+        @keyframes vaultEyebrowGlitch {
+          0%   { opacity: 0; transform: translateX(-2px); }
+          30%  { opacity: 1; transform: translateX(1px); }
+          60%  { transform: translateX(-1px); }
+          100% { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes vaultWipe {
+          from { clip-path: inset(0 100% 0 0); }
+          to   { clip-path: inset(0 0 0 0); }
+        }
+        @keyframes vaultFadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes vaultFadeUp {
+          from { opacity: 0; transform: translateY(8px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── Featured card parallax (desktop idle pointer) ───────── */
+        .featPreviewInner {
+          position: absolute;
+          inset: 0;
+          transform: scale(1.03)
+            translate3d(calc(var(--vpx, 0) * 2px), calc(var(--vpy, 0) * 2px), 0);
+          transition: transform 220ms ease-out;
+          will-change: transform;
+        }
+        .featReadout {
+          transform: translate3d(calc(var(--vpx, 0) * -2px), calc(var(--vpy, 0) * -2px), 0);
+          transition: transform 220ms ease-out;
+        }
+
+        /* ── Featured card assembly ──────────────────────────────── */
+        .featBootBorder {
+          position: absolute;
+          inset: 0;
+          z-index: 9;
+          pointer-events: none;
+          border: 1px solid rgba(255,255,255,0.45);
+          opacity: 0;
+          clip-path: inset(0 100% 100% 0);
+        }
+        .vault.vaultArmed.isBooted .featBootBorder {
+          animation: featBorderDraw 0.7s cubic-bezier(0.7, 0, 0.2, 1) 0.15s both;
+        }
+        @keyframes featBorderDraw {
+          0%   { opacity: 0; clip-path: inset(0 100% 100% 0); }
+          12%  { opacity: 1; }
+          70%  { opacity: 1; clip-path: inset(0 0 0 0); }
+          100% { opacity: 0; clip-path: inset(0 0 0 0); }
+        }
+
+        .featBracketTL { transform-origin: top left; }
+        .featBracketBR { transform-origin: bottom right; }
+        .vault.vaultArmed:not(.isBooted) .featBracketTL,
+        .vault.vaultArmed:not(.isBooted) .featBracketBR { opacity: 0; }
+        /* 'backwards' (not 'both') so the resting transform reverts to base
+           after the boot — keeps the hover bracket-lift below working. */
+        .vault.vaultArmed.isBooted .featBracketTL {
+          animation: featBracketIn 0.4s ease 0.55s backwards;
+        }
+        .vault.vaultArmed.isBooted .featBracketBR {
+          animation: featBracketIn 0.4s ease 0.66s backwards;
+        }
+        @keyframes featBracketIn {
+          from { opacity: 0; transform: scale(0.3); }
+          to   { opacity: 1; transform: scale(1); }
+        }
+
+        /* ── Hover polish (restrained) ───────────────────────────── */
+        .featBracketTL, .featBracketBR { transition: border-color 280ms ease, transform 240ms ease; }
+        .featCard:hover .featBracketTL,
+        .featCard:focus-visible .featBracketTL,
+        .featCard:hover .featBracketBR,
+        .featCard:focus-visible .featBracketBR { transform: scale(1.16); }
+
+        .featCta em,
+        .vaultCtaLink em,
+        .archiveOpen em { transition: transform 200ms ease; }
+        .featCard:hover .featCta em,
+        .featCard:focus-visible .featCta em,
+        .vaultCtaLink:hover em,
+        .vaultCtaLink:focus-visible em { transform: translateX(3px); }
+        .archiveCard:hover .archiveOpen em,
+        .archiveCard:focus-visible .archiveOpen em { transform: translateX(2px); }
+
+        .featBootScan {
+          position: absolute;
+          inset: 0 0 auto 0;
+          height: 24%;
+          z-index: 4;
+          pointer-events: none;
+          opacity: 0;
+          background: linear-gradient(
+            180deg,
+            transparent,
+            rgba(255,255,255,0.14) 50%,
+            transparent
+          );
+        }
+        .vault.vaultArmed.isBooted .featBootScan {
+          animation: featBootScanMove 0.8s ease-out 0.35s both;
+        }
+        @keyframes featBootScanMove {
+          0%   { opacity: 0; transform: translateY(-60%); }
+          12%  { opacity: 1; }
+          88%  { opacity: 1; }
+          100% { opacity: 0; transform: translateY(420%); }
+        }
+
+        /* Wireframe / dashboard draws in (clip-path is independent of the
+           parallax transform on the same element) */
+        /* Clip hidden until boot JS adds .featPreviewReveal (initial boot + hover swap) */
+        .vault.vaultArmed .featPreviewInner:not(.featPreviewReveal) { clip-path: inset(0 0 100% 0); }
+        .featPreviewInner.featPreviewReveal {
+          animation: featWireReveal 0.55s cubic-bezier(0.7, 0, 0.2, 1) both;
+        }
+        @keyframes featWireReveal {
+          from { clip-path: inset(0 0 100% 0); }
+          to   { clip-path: inset(0 0 0 0); }
+        }
+
+        .vault.vaultArmed:not(.isBooted) .featMeta { opacity: 0; }
+        .vault.vaultArmed.isBooted .featMeta {
+          animation: vaultFadeUp 0.5s ease 0.7s both;
+        }
+
+        .featTitleInner { display: inline-block; }
+        .vault.vaultArmed:not(.isBooted) .featTitleInner { clip-path: inset(0 100% 0 0); }
+        .vault.vaultArmed.isBooted .featTitleInner {
+          animation: vaultWipe 0.55s cubic-bezier(0.7, 0, 0.2, 1) 0.9s both;
+        }
+
+        .vault.vaultArmed:not(.isBooted) .featReadout { opacity: 0; }
+        .vault.vaultArmed.isBooted .featReadout {
+          animation: vaultFadeIn 0.5s ease 0.85s both;
+        }
+
+        /* ── Lower archive cards (loading like search results) ───── */
+        .vault.vaultArmed:not(.isBooted) .archiveConveyor { opacity: 0; }
+        .vault.vaultArmed.isBooted .archiveConveyor {
+          animation: vaultFadeIn 0.6s ease 0.55s both;
+        }
+
+        .vault.vaultArmed:not(.isBooted) .archiveCard { opacity: 0; }
+        .vault.vaultArmed.isBooted .archiveCard {
+          animation: archiveBoot 0.6s ease
+            calc(0.65s + min(var(--ai, 0), 7) * 0.07s) backwards;
+        }
+        @keyframes archiveBoot {
+          0%   { opacity: 0;    transform: translateY(14px); }
+          22%  { opacity: 0.16; }
+          38%  { opacity: 0.5;  }
+          48%  { opacity: 0.12; }
+          62%  { opacity: 0.72; }
+          74%  { opacity: 0.32; }
+          100% { opacity: 0.72; transform: translateY(0); }
+        }
+
+        .vault.vaultArmed:not(.isBooted) .archivePreview :global(.mock) {
+          clip-path: inset(0 0 100% 0);
+        }
+        .vault.vaultArmed.isBooted .archivePreview :global(.mock) {
+          animation: featWireReveal 0.5s ease
+            calc(0.78s + min(var(--ai, 0), 7) * 0.07s) both;
+        }
+
+        /* ── Bottom CTA (after the cards) ────────────────────────── */
+        .vault.vaultArmed:not(.isBooted) .vaultCtaLink { opacity: 0; }
+        .vault.vaultArmed.isBooted .vaultCtaLink {
+          animation: vaultFadeIn 0.5s ease 1.15s both;
+        }
+
         /* ── Mobile ───────────────────────────────────────────────── */
         @media (max-width: 640px) {
           .vault {
@@ -2835,6 +3263,32 @@ export default function SelectedWorkVault() {
             font-size: 10px;
             padding: 0 20px;
           }
+
+          /* Boot: lighter + faster on mobile. Keep heading + card reveals
+             and a minimal flicker; drop parallax, sweep and corner glow. */
+          .featPreviewInner {
+            transform: none;
+            will-change: auto;
+          }
+          .featReadout { transform: none; }
+          .vaultScanSweep,
+          .vaultGlow,
+          .featBootScan,
+          .featBootBorder {
+            display: none;
+          }
+          .featPreviewInner.featPreviewReveal {
+            animation-duration: 0.5s;
+            animation-delay: 0;
+          }
+          .vault.vaultArmed.isBooted .featMeta { animation-delay: 0.45s; }
+          .vault.vaultArmed.isBooted .featTitleInner { animation-delay: 0.55s; }
+          .vault.vaultArmed.isBooted .featReadout { animation-delay: 0.5s; }
+          .vault.vaultArmed.isBooted .archiveConveyor { animation-delay: 0.35s; }
+          .vault.vaultArmed.isBooted .archiveCard {
+            animation-delay: calc(0.45s + min(var(--ai, 0), 6) * 0.06s);
+          }
+          .vault.vaultArmed.isBooted .featCard::after { animation: none; }
         }
 
         /* ── Reduced motion ───────────────────────────────────────── */
@@ -2914,6 +3368,32 @@ export default function SelectedWorkVault() {
             animation: none;
             opacity: 0;
           }
+
+          /* Boot sequence fully neutralised — render static & visible. */
+          .vaultBootFx { display: none; }
+          .vaultHeadingInner,
+          .featTitleInner,
+          .featPreviewInner,
+          .featPreviewInner.featPreviewReveal,
+          .archivePreview :global(.mock) {
+            clip-path: none !important;
+            animation: none !important;
+          }
+          .featPreviewInner,
+          .featReadout { transform: none; }
+          .vaultEyebrow,
+          .vaultSub,
+          .featMeta,
+          .featReadout,
+          .featBracketTL,
+          .featBracketBR,
+          .archiveConveyor,
+          .archiveCard,
+          .vaultCtaLink {
+            opacity: 1;
+            animation: none;
+          }
+          .featCard::after { animation: none; content: none; }
         }
 
         @media (prefers-reduced-motion: reduce) and (max-width: 640px) {

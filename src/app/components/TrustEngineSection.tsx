@@ -1,8 +1,14 @@
 'use client';
 
 import { useEffect, useLayoutEffect, useRef, useState, useCallback } from 'react';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/dist/ScrollTrigger';
+import {
+  motion,
+  AnimatePresence,
+  useReducedMotion,
+  useMotionValue,
+  animate as fmAnimate,
+  type Variants,
+} from 'framer-motion';
 
 const useIsoEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
@@ -103,6 +109,68 @@ const SIGNALS: SignalItem[] = [
   },
 ];
 
+// Smooth, cinematic easing reused across the section.
+const EASE_OUT = [0.22, 1, 0.36, 1] as const;
+
+const containerV: Variants = {
+  hidden: {},
+  show: {
+    transition: { staggerChildren: 0.09, delayChildren: 0.12 },
+  },
+};
+
+const riseV: Variants = {
+  hidden: { opacity: 0, y: 34, filter: 'blur(12px)' },
+  show: {
+    opacity: 1, y: 0, filter: 'blur(0px)',
+    transition: { duration: 0.95, ease: EASE_OUT },
+  },
+};
+
+const riseLeftV: Variants = {
+  hidden: { opacity: 0, x: -40, filter: 'blur(10px)' },
+  show: {
+    opacity: 1, x: 0, filter: 'blur(0px)',
+    transition: { duration: 0.85, ease: EASE_OUT },
+  },
+};
+
+const riseRightV: Variants = {
+  hidden: { opacity: 0, x: 40, filter: 'blur(10px)' },
+  show: {
+    opacity: 1, x: 0, filter: 'blur(0px)',
+    transition: { duration: 0.85, ease: EASE_OUT },
+  },
+};
+
+const scaleInV: Variants = {
+  hidden: { opacity: 0, scale: 0.9, filter: 'blur(14px)' },
+  show: {
+    opacity: 1, scale: 1, filter: 'blur(0px)',
+    transition: { duration: 1.1, ease: EASE_OUT },
+  },
+};
+
+// ── Animated number counter ──────────────────────────────────────────────────
+
+function Counter({ value, animate }: { value: number; animate: boolean }) {
+  const mv = useMotionValue(0);
+  const [display, setDisplay] = useState(value);
+
+  useEffect(() => {
+    if (!animate) { setDisplay(value); return; }
+    mv.set(0);
+    const controls = fmAnimate(mv, value, {
+      duration: 1.2,
+      ease: EASE_OUT,
+      onUpdate: (v) => setDisplay(Math.round(v)),
+    });
+    return () => controls.stop();
+  }, [value, animate, mv]);
+
+  return <>{display}</>;
+}
+
 // ── Trust Core SVG ─────────────────────────────────────────────────────────────
 
 function TrustCoreSVG({
@@ -115,13 +183,11 @@ function TrustCoreSVG({
   const cx = 200, cy = 200;
   const sig = SIGNALS[activeIndex];
 
-  // 6 node positions, evenly spaced on r=138
   const nodes = SIGNALS.map((_, i) => {
     const angle = (i / SIGNALS.length) * 2 * Math.PI - Math.PI / 2;
     return { x: cx + 138 * Math.cos(angle), y: cy + 138 * Math.sin(angle) };
   });
 
-  // 36 tick marks on r=155
   const ticks = Array.from({ length: 36 }, (_, i) => {
     const a = (i / 36) * 2 * Math.PI;
     const major = i % 9 === 0;
@@ -158,35 +224,28 @@ function TrustCoreSVG({
         </clipPath>
       </defs>
 
-      {/* ambient glow */}
       <circle cx={cx} cy={cy} r="185" fill="url(#tcGlow)" />
 
-      {/* static outer rings */}
       <circle cx={cx} cy={cy} r="170" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="1" />
       <circle cx={cx} cy={cy} r="155" fill="none" stroke="rgba(255,255,255,0.09)" strokeWidth="1" />
       <circle cx={cx} cy={cy} r="147" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="0.5" strokeDasharray="4 6" />
 
-      {/* rotating ring 1 */}
       <circle cx={cx} cy={cy} r="124" fill="none" stroke="rgba(255,255,255,0.11)" strokeWidth="0.5" strokeDasharray="8 7">
         {anim('16s')}
       </circle>
 
-      {/* mid ring */}
       <circle cx={cx} cy={cy} r="108" fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="1" />
       <circle cx={cx} cy={cy} r="90"  fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="0.5" strokeDasharray="3 4" />
 
-      {/* rotating ring 2 (counter) */}
       <circle cx={cx} cy={cy} r="75" fill="none" stroke="rgba(255,255,255,0.13)" strokeWidth="0.5" strokeDasharray="6 5">
         {anim('22s', -1)}
       </circle>
 
-      {/* cross-hairs */}
       <line x1={cx} y1="20" x2={cx} y2="380" stroke="rgba(255,255,255,0.03)" strokeWidth="0.5" />
       <line x1="20" y1={cy} x2="380" y2={cy} stroke="rgba(255,255,255,0.03)" strokeWidth="0.5" />
       <line x1="68" y1="68" x2="332" y2="332" stroke="rgba(255,255,255,0.02)" strokeWidth="0.5" />
       <line x1="332" y1="68" x2="68" y2="332" stroke="rgba(255,255,255,0.02)" strokeWidth="0.5" />
 
-      {/* radar sweep */}
       <g clipPath="url(#tcClip)">
         <g>
           {!reducedMotion && (
@@ -200,7 +259,6 @@ function TrustCoreSVG({
             />
           )}
           <line x1={cx} y1={cy} x2={cx} y2={cy - 155} stroke="rgba(255,255,255,0.5)" strokeWidth="1" />
-          {/* sweep trail — static arc approximation */}
           <path
             d={`M${cx},${cy} L${cx},${cy - 155} A155,155 0 0,0 ${cx + 155 * Math.sin(0.35)},${cy - 155 * Math.cos(0.35)} Z`}
             fill="rgba(255,255,255,0.04)"
@@ -208,44 +266,54 @@ function TrustCoreSVG({
         </g>
       </g>
 
-      {/* tick marks */}
       {ticks.map((t, i) => (
         <line key={i} x1={t.x1} y1={t.y1} x2={t.x2} y2={t.y2}
           stroke="rgba(255,255,255,0.2)" strokeWidth={t.sw} />
       ))}
 
-      {/* signal nodes + connectors */}
       {nodes.map(({ x, y }, i) => {
         const active = i === activeIndex;
         return (
           <g key={i}>
-            <line x1={x} y1={y} x2={cx} y2={cy}
-              stroke={active ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.05)'}
-              strokeWidth={active ? 1 : 0.5}
-              strokeDasharray={active ? undefined : '3 4'} />
-            {active && <circle cx={x} cy={y} r="9" fill="none" stroke="rgba(255,255,255,0.22)" strokeWidth="1" />}
-            <circle cx={x} cy={y} r={active ? 5 : 3}
-              fill={active ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.22)'} />
+            <motion.line
+              x1={x} y1={y} x2={cx} y2={cy}
+              animate={{
+                stroke: active ? 'rgba(255,255,255,0.32)' : 'rgba(255,255,255,0.05)',
+                strokeWidth: active ? 1.2 : 0.5,
+              }}
+              transition={{ duration: 0.6, ease: EASE_OUT }}
+              strokeDasharray={active ? undefined : '3 4'}
+            />
+            {active && (
+              <motion.circle
+                cx={x} cy={y}
+                initial={{ r: 4, opacity: 0 }}
+                animate={{ r: 9, opacity: 1 }}
+                transition={{ duration: 0.6, ease: EASE_OUT }}
+                fill="none" stroke="rgba(255,255,255,0.28)" strokeWidth="1"
+              />
+            )}
+            <motion.circle
+              cx={x} cy={y}
+              animate={{ r: active ? 5.5 : 3, fill: active ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.22)' }}
+              transition={{ duration: 0.5, ease: EASE_OUT }}
+            />
           </g>
         );
       })}
 
-      {/* inner disc */}
       <circle cx={cx} cy={cy} r="56" fill="rgba(10,10,10,0.88)" stroke="rgba(255,255,255,0.18)" strokeWidth="1" />
       <circle cx={cx} cy={cy} r="50" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="0.5" />
 
-      {/* center text */}
       <text x={cx} y={cy - 13} textAnchor="middle" fill="rgba(255,255,255,0.28)" fontSize="6.5" fontFamily="monospace" letterSpacing="0.14em">TRUST ENGINE</text>
       <text x={cx} y={cy + 7}  textAnchor="middle" fill="rgba(255,255,255,0.94)" fontSize="20"  fontFamily="monospace" fontWeight="700" letterSpacing="0.03em">{sig.strength}%</text>
       <text x={cx} y={cy + 21} textAnchor="middle" fill="rgba(255,255,255,0.32)" fontSize="6.5" fontFamily="monospace" letterSpacing="0.12em">SIG {sig.id}</text>
 
-      {/* cardinals */}
       <text x={cx}   y="13"    textAnchor="middle" fill="rgba(255,255,255,0.16)" fontSize="7" fontFamily="monospace">N</text>
       <text x="390"  y={cy+3}  textAnchor="middle" fill="rgba(255,255,255,0.16)" fontSize="7" fontFamily="monospace">E</text>
       <text x={cx}   y="392"   textAnchor="middle" fill="rgba(255,255,255,0.16)" fontSize="7" fontFamily="monospace">S</text>
       <text x="10"   y={cy+3}  textAnchor="middle" fill="rgba(255,255,255,0.16)" fontSize="7" fontFamily="monospace">W</text>
 
-      {/* corner coords */}
       <text x="8"   y="13"  fill="rgba(255,255,255,0.11)" fontSize="6" fontFamily="monospace">X:042</text>
       <text x="8"   y="393" fill="rgba(255,255,255,0.11)" fontSize="6" fontFamily="monospace">Y:118</text>
       <text x="308" y="13"  fill="rgba(255,255,255,0.11)" fontSize="6" fontFamily="monospace">Z:{sig.strength}%</text>
@@ -260,68 +328,34 @@ export default function TrustEngineSection() {
   const [activeIndex, setActiveIndex]   = useState(0);
   const [lockedIndex, setLockedIndex]   = useState<number | null>(null);
   const [isMounted,   setIsMounted]     = useState(false);
-  const [reducedMotion, setReducedMotion] = useState(false);
-
-  const sectionRef   = useRef<HTMLDivElement>(null);
-  const rowRefs      = useRef<(HTMLDivElement | null)[]>([]);
-  const coreRef      = useRef<HTMLDivElement>(null);
-  const matrixRef    = useRef<HTMLDivElement>(null);
-  const mobileRefs   = useRef<(HTMLDivElement | null)[]>([]);
+  const [entered,     setEntered]       = useState(false);
+  const reduce = useReducedMotion();
+  const reducedMotion = !!reduce;
 
   const sig = SIGNALS[activeIndex];
 
   // client-only boot
   useIsoEffect(() => {
     setIsMounted(true);
-    setReducedMotion(window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   }, []);
 
-  // scroll-driven signal: CoinScene dispatches 'trustSignal' with detail = 0-5
+  // Reduced motion → reveal immediately (no scroll-driven entrance to wait for).
+  useEffect(() => {
+    if (reducedMotion) setEntered(true);
+  }, [reducedMotion]);
+
+  // scroll-driven signal: CoinScene dispatches 'trustSignal' with detail = 0-5.
+  // First receipt = panel reached → trigger the cinematic entrance.
   useIsoEffect(() => {
     if (!isMounted) return;
     const handler = (e: Event) => {
+      setEntered(true);
       const idx = (e as CustomEvent<number>).detail;
       if (lockedIndex === null) setActiveIndex(idx);
     };
     window.addEventListener('trustSignal', handler);
     return () => window.removeEventListener('trustSignal', handler);
   }, [isMounted, lockedIndex]);
-
-  // scroll reveal
-  useIsoEffect(() => {
-    if (!isMounted || reducedMotion) return;
-    gsap.registerPlugin(ScrollTrigger);
-
-    const ctx = gsap.context(() => {
-      const st = { trigger: sectionRef.current, start: 'top 76%', once: true };
-
-      gsap.fromTo(rowRefs.current.filter(Boolean), { opacity: 0, x: -14, filter: 'blur(3px)' }, {
-        opacity: 1, x: 0, filter: 'blur(0px)', duration: 0.45, stagger: 0.07,
-        ease: 'power2.out', scrollTrigger: st,
-      });
-
-      if (coreRef.current) {
-        gsap.fromTo(coreRef.current, { opacity: 0, scale: 0.96 }, {
-          opacity: 1, scale: 1, duration: 0.55, delay: 0.15,
-          ease: 'power2.out', scrollTrigger: st,
-        });
-      }
-
-      if (matrixRef.current) {
-        gsap.fromTo(matrixRef.current, { opacity: 0, x: 14, filter: 'blur(3px)' }, {
-          opacity: 1, x: 0, filter: 'blur(0px)', duration: 0.5, delay: 0.25,
-          ease: 'power2.out', scrollTrigger: st,
-        });
-      }
-
-      gsap.fromTo(mobileRefs.current.filter(Boolean), { opacity: 0, y: 10, filter: 'blur(2px)' }, {
-        opacity: 1, y: 0, filter: 'blur(0px)', duration: 0.38, stagger: 0.09,
-        ease: 'power2.out', scrollTrigger: st,
-      });
-    }, sectionRef);
-
-    return () => ctx.revert();
-  }, [isMounted, reducedMotion]);
 
   const handleHover = useCallback((i: number) => {
     if (lockedIndex === null) setActiveIndex(i);
@@ -336,44 +370,49 @@ export default function TrustEngineSection() {
     else { setLockedIndex(i); setActiveIndex(i); }
   }, [lockedIndex]);
 
+  const show = entered ? 'show' : 'hidden';
+
   return (
-    <div ref={sectionRef} className="te">
+    <motion.div
+      className="te"
+      variants={containerV}
+      initial="hidden"
+      animate={show}
+    >
       {/* background grid */}
       <div className="teBg" aria-hidden="true" />
-      {/* faint bg words */}
       <span className="teBgW teBgW1" aria-hidden="true">TRUST</span>
       <span className="teBgW teBgW2" aria-hidden="true">SIGNAL</span>
       <span className="teBgW teBgW3" aria-hidden="true">MATRIX</span>
 
       {/* ── header ──────────────────────────────────────────────────── */}
       <header className="teHead">
-        <span className="teLabel">SECTION D / TRUST ENGINE</span>
-        <h2 className="teH2">WHY TEAMS CHOOSE US</h2>
-        <p className="teSub">
+        <motion.span className="teLabel" variants={riseV}>SECTION D / TRUST ENGINE</motion.span>
+        <motion.h2 className="teH2" variants={riseV}>WHY TEAMS CHOOSE US</motion.h2>
+        <motion.p className="teSub" variants={riseV}>
           We turn messy product ideas into clear, scalable systems built for users,
           developers, and business outcomes.
-        </p>
-        <div className="teMeta">
-          <span className="teMetaChip">TRUST INDEX: {sig.strength}%</span>
+        </motion.p>
+        <motion.div className="teMeta" variants={riseV}>
+          <span className="teMetaChip">TRUST INDEX: <Counter value={sig.strength} animate={entered} />%</span>
           <span className="teMetaChip">BUILD RISK: LOW</span>
           <span className="teMetaChip">STATUS: VERIFIED</span>
           <span className="teMetaChip">MODE: RISK REDUCTION</span>
-        </div>
+        </motion.div>
       </header>
 
       {/* ── desktop 3-col ───────────────────────────────────────────── */}
       <div className="teGrid">
 
         {/* LEFT */}
-        <div className="teLeft">
+        <motion.div className="teLeft" variants={riseLeftV}>
           <div className="teColLbl">CORE SIGNALS</div>
           {SIGNALS.map((s, i) => {
             const active = activeIndex === i;
             const locked = lockedIndex === i;
             return (
-              <div
+              <motion.div
                 key={s.id}
-                ref={el => { rowRefs.current[i] = el; }}
                 className={`teRow${active ? ' teRowOn' : ''}${locked ? ' teRowLocked' : ''}`}
                 onMouseEnter={() => handleHover(i)}
                 onMouseLeave={handleLeave}
@@ -382,6 +421,8 @@ export default function TrustEngineSection() {
                 onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') handleClick(i); }}
                 aria-pressed={locked}
                 aria-label={`Signal ${s.id}: ${s.name}`}
+                whileHover={reducedMotion ? undefined : { x: 6 }}
+                transition={{ type: 'spring', stiffness: 320, damping: 30 }}
               >
                 {active && <span className="teScan" aria-hidden="true" />}
                 {active && <span className="teCnx"  aria-hidden="true" />}
@@ -392,21 +433,37 @@ export default function TrustEngineSection() {
                   <span className={`teChip teChip-${s.status.toLowerCase()}`}>{s.status}</span>
                 </div>
 
-                {active && <p className="teRowTxt">{s.text}</p>}
+                <AnimatePresence initial={false}>
+                  {active && (
+                    <motion.p
+                      className="teRowTxt"
+                      initial={{ opacity: 0, height: 0, marginTop: 0, marginBottom: 0 }}
+                      animate={{ opacity: 1, height: 'auto', marginTop: 10, marginBottom: 8 }}
+                      exit={{ opacity: 0, height: 0, marginTop: 0, marginBottom: 0 }}
+                      transition={{ duration: 0.5, ease: EASE_OUT }}
+                    >
+                      {s.text}
+                    </motion.p>
+                  )}
+                </AnimatePresence>
 
                 <div className="teMeter">
                   <div className="teMeterT">
-                    <div className="teMeterF" style={{ width: `${active ? s.strength : Math.round(s.strength * 0.2)}%` }} />
+                    <motion.div
+                      className="teMeterF"
+                      animate={{ width: `${active ? s.strength : Math.round(s.strength * 0.2)}%` }}
+                      transition={{ duration: 0.8, ease: EASE_OUT }}
+                    />
                   </div>
                   <span className="teMeterN">{s.strength}</span>
                 </div>
-              </div>
+              </motion.div>
             );
           })}
-        </div>
+        </motion.div>
 
         {/* CENTER */}
-        <div ref={coreRef} className="teCenter">
+        <motion.div className="teCenter" variants={scaleInV}>
           <b className="tcBr tcBrTL" aria-hidden="true" /><b className="tcBr tcBrTR" aria-hidden="true" />
           <b className="tcBr tcBrBL" aria-hidden="true" /><b className="tcBr tcBrBR" aria-hidden="true" />
 
@@ -417,47 +474,68 @@ export default function TrustEngineSection() {
           </div>
 
           <div className="tcReadout">
-            {sig.coreReadout.map((r, i) => (
-              <div key={i} className="tcRRow">
-                <span className="tcRKey">{r.label}</span>
-                <span className="tcRVal">{r.value}</span>
-              </div>
-            ))}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeIndex}
+                className="tcReadoutInner"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.4, ease: EASE_OUT }}
+              >
+                {sig.coreReadout.map((r, i) => (
+                  <div key={i} className="tcRRow">
+                    <span className="tcRKey">{r.label}</span>
+                    <span className="tcRVal">{r.value}</span>
+                  </div>
+                ))}
+              </motion.div>
+            </AnimatePresence>
           </div>
 
           <div className="tcFoot">
             <span>MODE: RISK REDUCTION</span>
             <span>SIG: {sig.id}/06</span>
           </div>
-        </div>
+        </motion.div>
 
         {/* RIGHT */}
-        <div ref={matrixRef} className="teRight">
+        <motion.div className="teRight" variants={riseRightV}>
           <div className="tmHdr">
             <span className="tmHdrTxt">RISK REDUCTION MATRIX</span>
             <div className="tmLive"><span className="tmDot" aria-hidden="true" /><span>LIVE</span></div>
           </div>
 
           <div className="tmBody">
-            <div className="tmRow">
-              <span className="tmKey">ACTIVE SIGNAL</span>
-              <span className="tmVal">{sig.name}</span>
-            </div>
-            <div className="tmDiv" />
-            <div className="tmRow">
-              <span className="tmKey">RISK REMOVED</span>
-              <span className="tmValB">{sig.riskRemoved}</span>
-            </div>
-            <div className="tmDiv" />
-            <div className="tmRow">
-              <span className="tmKey">PROOF OUTPUT</span>
-              <span className="tmValB">{sig.proofOutput}</span>
-            </div>
-            <div className="tmDiv" />
-            <div className="tmRow">
-              <span className="tmKey">RESULT</span>
-              <span className="tmValB">{sig.result}</span>
-            </div>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeIndex}
+                initial={{ opacity: 0, x: 18, filter: 'blur(6px)' }}
+                animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
+                exit={{ opacity: 0, x: -18, filter: 'blur(6px)' }}
+                transition={{ duration: 0.45, ease: EASE_OUT }}
+              >
+                <div className="tmRow">
+                  <span className="tmKey">ACTIVE SIGNAL</span>
+                  <span className="tmVal">{sig.name}</span>
+                </div>
+                <div className="tmDiv" />
+                <div className="tmRow">
+                  <span className="tmKey">RISK REMOVED</span>
+                  <span className="tmValB">{sig.riskRemoved}</span>
+                </div>
+                <div className="tmDiv" />
+                <div className="tmRow">
+                  <span className="tmKey">PROOF OUTPUT</span>
+                  <span className="tmValB">{sig.proofOutput}</span>
+                </div>
+                <div className="tmDiv" />
+                <div className="tmRow">
+                  <span className="tmKey">RESULT</span>
+                  <span className="tmValB">{sig.result}</span>
+                </div>
+              </motion.div>
+            </AnimatePresence>
           </div>
 
           <div className="tmMeta">
@@ -477,14 +555,13 @@ export default function TrustEngineSection() {
           <div className="tmFoot">
             <span>X:042</span><span>Y:118</span><span>REF: TRE-{sig.id}</span>
           </div>
-        </div>
+        </motion.div>
 
       </div>
 
       {/* ── mobile stacked ──────────────────────────────────────────── */}
       <div className="teMob">
-        {/* compact trust index panel */}
-        <div className="tmiTop">
+        <motion.div className="tmiTop" variants={riseV}>
           <div className="tmiTopHdr">
             <span>TRUST ENGINE</span>
             <span className="tmDot" aria-hidden="true" />
@@ -495,14 +572,15 @@ export default function TrustEngineSection() {
               <span className="tmiTV">{r.value}</span>
             </div>
           ))}
-        </div>
+        </motion.div>
 
         {SIGNALS.map((s, i) => (
-          <div
+          <motion.div
             key={s.id}
-            ref={el => { mobileRefs.current[i] = el; }}
             className={`tmiCard${activeIndex === i ? ' tmiCardOn' : ''}`}
             onClick={() => setActiveIndex(activeIndex === i ? 0 : i)}
+            variants={riseV}
+            whileTap={reducedMotion ? undefined : { scale: 0.985 }}
           >
             <div className="tmiCardTop">
               <span className="tmiNum">{s.id}</span>
@@ -520,11 +598,16 @@ export default function TrustEngineSection() {
             </div>
             <div className="tmiMeter">
               <div className="teMeterT teMeterTFull">
-                <div className="teMeterF" style={{ width: `${s.strength}%` }} />
+                <motion.div
+                  className="teMeterF"
+                  initial={{ width: 0 }}
+                  animate={{ width: entered ? `${s.strength}%` : 0 }}
+                  transition={{ duration: 0.9, ease: EASE_OUT, delay: 0.1 + i * 0.05 }}
+                />
               </div>
               <span className="teMeterN">{s.strength}</span>
             </div>
-          </div>
+          </motion.div>
         ))}
       </div>
 
@@ -534,9 +617,16 @@ export default function TrustEngineSection() {
         .te {
           position: relative;
           width: 100%;
+          max-width: 1320px;
+          height: 100%;
+          margin: 0 auto;
+          box-sizing: border-box;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
           background: #0a0a0a;
           color: #ededed;
-          padding: 52px 44px 64px;
+          padding: clamp(36px, 6vh, 76px) clamp(28px, 4vw, 72px);
           overflow: hidden;
           font-family: var(--font-geist-mono, 'Courier New', monospace);
         }
@@ -547,7 +637,7 @@ export default function TrustEngineSection() {
           background-image:
             linear-gradient(rgba(255,255,255,0.022) 1px, transparent 1px),
             linear-gradient(90deg, rgba(255,255,255,0.022) 1px, transparent 1px);
-          background-size: 44px 44px;
+          background-size: 56px 56px;
         }
 
         /* faint bg words */
@@ -556,65 +646,65 @@ export default function TrustEngineSection() {
           font-weight: 900; letter-spacing: 0.22em; white-space: nowrap;
           font-family: var(--font-geist-mono, monospace);
         }
-        .teBgW1 { font-size: 220px; color: rgba(255,255,255,0.017); top: 28%; left: 50%; transform: translate(-50%, -50%); }
-        .teBgW2 { font-size: 130px; color: rgba(255,255,255,0.012); bottom: 8%;  right: -4%; }
-        .teBgW3 { font-size: 100px; color: rgba(255,255,255,0.009); top: 5%;     left: -2%; }
+        .teBgW1 { font-size: 240px; color: rgba(255,255,255,0.017); top: 26%; left: 50%; transform: translate(-50%, -50%); }
+        .teBgW2 { font-size: 140px; color: rgba(255,255,255,0.012); bottom: 6%;  right: -4%; }
+        .teBgW3 { font-size: 110px; color: rgba(255,255,255,0.009); top: 4%;     left: -2%; }
 
         /* header */
-        .teHead { position: relative; z-index: 2; margin-bottom: 36px; }
+        .teHead { position: relative; z-index: 2; margin-bottom: clamp(24px, 4vh, 52px); }
 
         .teLabel {
-          display: block; font-size: 9px; letter-spacing: 0.2em;
-          color: rgba(255,255,255,0.38); text-transform: uppercase; margin-bottom: 14px;
+          display: block; font-size: 11px; letter-spacing: 0.26em;
+          color: rgba(255,255,255,0.4); text-transform: uppercase; margin-bottom: 22px;
         }
 
         .teH2 {
-          font-size: clamp(20px, 2.4vw, 36px); font-weight: 700;
-          letter-spacing: 0.07em; text-transform: uppercase;
-          margin: 0 0 12px; color: rgba(255,255,255,0.96);
-          font-family: var(--font-geist-mono, monospace); line-height: 1.05;
+          font-size: clamp(30px, 3.4vw, 52px); font-weight: 700;
+          letter-spacing: 0.06em; text-transform: uppercase;
+          margin: 0 0 22px; color: rgba(255,255,255,0.97);
+          font-family: var(--font-geist-mono, monospace); line-height: 1.04;
         }
 
         .teSub {
-          font-size: 12px; line-height: 1.62; color: rgba(255,255,255,0.47);
-          max-width: 460px; margin: 0 0 16px;
+          font-size: 15px; line-height: 1.74; color: rgba(255,255,255,0.5);
+          max-width: 560px; margin: 0 0 28px;
           font-family: var(--font-geist-sans, sans-serif);
         }
 
-        .teMeta { display: flex; gap: 8px; flex-wrap: wrap; }
+        .teMeta { display: flex; gap: 12px; flex-wrap: wrap; }
 
         .teMetaChip {
-          font-size: 7.5px; letter-spacing: 0.11em; color: rgba(255,255,255,0.4);
-          border: 1px solid rgba(255,255,255,0.12); padding: 3px 8px;
+          font-size: 9.5px; letter-spacing: 0.13em; color: rgba(255,255,255,0.42);
+          border: 1px solid rgba(255,255,255,0.13); padding: 6px 12px;
           font-family: var(--font-geist-mono, monospace); text-transform: uppercase;
         }
 
         /* 3-col grid */
         .teGrid {
           position: relative; z-index: 2;
-          display: grid; grid-template-columns: 1fr 246px 1fr;
-          gap: 16px; align-items: start;
+          display: grid; grid-template-columns: 1fr 320px 1fr;
+          gap: 32px; align-items: start;
         }
 
         .teColLbl {
-          font-size: 7.5px; letter-spacing: 0.18em; color: rgba(255,255,255,0.24);
-          text-transform: uppercase; margin-bottom: 8px;
+          font-size: 9.5px; letter-spacing: 0.2em; color: rgba(255,255,255,0.26);
+          text-transform: uppercase; margin-bottom: 16px;
           font-family: var(--font-geist-mono, monospace);
         }
 
         /* signal rows */
-        .teLeft { display: flex; flex-direction: column; gap: 2px; }
+        .teLeft { display: flex; flex-direction: column; gap: 10px; }
 
         .teRow {
           position: relative; border: 1px solid rgba(255,255,255,0.09);
-          padding: 9px 12px; cursor: pointer; overflow: hidden;
-          opacity: 0.48; user-select: none; outline: none;
-          transition: border-color 0.2s ease, background 0.2s ease, opacity 0.2s ease;
+          padding: 18px 20px; cursor: pointer; overflow: hidden;
+          opacity: 0.5; user-select: none; outline: none;
+          transition: border-color 0.25s ease, background 0.25s ease, opacity 0.25s ease;
         }
         .teRow:focus-visible { outline: 1px solid rgba(255,255,255,0.36); outline-offset: 2px; }
-        .teRow:hover  { border-color: rgba(255,255,255,0.24); opacity: 0.82; background: rgba(255,255,255,0.022); }
-        .teRowOn      { border-color: rgba(255,255,255,0.34) !important; opacity: 1 !important; background: rgba(255,255,255,0.028) !important; }
-        .teRowLocked  { border-color: rgba(255,255,255,0.52) !important; }
+        .teRow:hover  { border-color: rgba(255,255,255,0.24); opacity: 0.85; background: rgba(255,255,255,0.022); }
+        .teRowOn      { border-color: rgba(255,255,255,0.34) !important; opacity: 1 !important; background: rgba(255,255,255,0.03) !important; }
+        .teRowLocked  { border-color: rgba(255,255,255,0.55) !important; }
 
         /* scanline pass */
         .teScan {
@@ -627,22 +717,21 @@ export default function TrustEngineSection() {
           100% { transform: translateX(100%);  }
         }
 
-        /* connector line pointing right toward center col */
         .teCnx {
           position: absolute; top: 50%; right: 0;
-          width: 26px; height: 1px;
+          width: 32px; height: 1px;
           background: linear-gradient(90deg, rgba(255,255,255,0.38), transparent);
           pointer-events: none;
         }
 
-        .teRowTop { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .teRowTop { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
 
-        .teNum  { font-size: 9px; letter-spacing: 0.1em; color: rgba(255,255,255,0.33); font-family: var(--font-geist-mono, monospace); min-width: 18px; }
-        .teName { font-size: 10.5px; letter-spacing: 0.1em; color: rgba(255,255,255,0.9); text-transform: uppercase; flex: 1; font-family: var(--font-geist-mono, monospace); }
+        .teNum  { font-size: 11px; letter-spacing: 0.1em; color: rgba(255,255,255,0.34); font-family: var(--font-geist-mono, monospace); min-width: 22px; }
+        .teName { font-size: 13px; letter-spacing: 0.09em; color: rgba(255,255,255,0.92); text-transform: uppercase; flex: 1; font-family: var(--font-geist-mono, monospace); }
 
         /* status chips */
         .teChip {
-          font-size: 7.5px; letter-spacing: 0.1em; padding: 2px 7px;
+          font-size: 9px; letter-spacing: 0.1em; padding: 4px 9px;
           border: 1px solid; text-transform: uppercase; white-space: nowrap;
           font-family: var(--font-geist-mono, monospace);
         }
@@ -652,114 +741,114 @@ export default function TrustEngineSection() {
         .teChip-ready    { color: rgba(255,255,255,0.7);  border-color: rgba(255,255,255,0.24); }
 
         .teRowTxt {
-          font-size: 10.5px; line-height: 1.55; color: rgba(255,255,255,0.5);
-          margin: 7px 0 6px; font-family: var(--font-geist-sans, sans-serif);
+          font-size: 13px; line-height: 1.62; color: rgba(255,255,255,0.55);
+          overflow: hidden; font-family: var(--font-geist-sans, sans-serif);
         }
 
-        .teMeter { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
-        .teMeterT { flex: 1; height: 2px; background: rgba(255,255,255,0.08); overflow: hidden; }
-        .teMeterTFull { flex: 1; height: 2px; background: rgba(255,255,255,0.08); overflow: hidden; }
-        .teMeterF { height: 100%; background: rgba(255,255,255,0.62); transition: width 0.55s cubic-bezier(0.4,0,0.2,1); }
-        .teMeterN { font-size: 8px; color: rgba(255,255,255,0.35); font-family: var(--font-geist-mono, monospace); min-width: 22px; text-align: right; }
+        .teMeter { display: flex; align-items: center; gap: 12px; margin-top: 14px; }
+        .teMeterT { flex: 1; height: 3px; background: rgba(255,255,255,0.08); overflow: hidden; }
+        .teMeterTFull { flex: 1; height: 3px; background: rgba(255,255,255,0.08); overflow: hidden; }
+        .teMeterF { height: 100%; background: rgba(255,255,255,0.66); }
+        .teMeterN { font-size: 10px; color: rgba(255,255,255,0.38); font-family: var(--font-geist-mono, monospace); min-width: 26px; text-align: right; }
 
         /* center col */
         .teCenter {
           position: relative; border: 1px solid rgba(255,255,255,0.12);
-          padding: 12px 10px 10px;
+          padding: 24px 22px 20px;
           display: flex; flex-direction: column; align-items: center;
         }
 
         /* corner brackets */
-        .tcBr { position: absolute; width: 11px; height: 11px; border-style: solid; border-color: rgba(255,255,255,0.34); display: block; }
+        .tcBr { position: absolute; width: 14px; height: 14px; border-style: solid; border-color: rgba(255,255,255,0.34); display: block; }
         .tcBrTL { top: -1px;    left: -1px;  border-width: 1.5px 0 0 1.5px; }
         .tcBrTR { top: -1px;    right: -1px; border-width: 1.5px 1.5px 0 0; }
         .tcBrBL { bottom: -1px; left: -1px;  border-width: 0 0 1.5px 1.5px; }
         .tcBrBR { bottom: -1px; right: -1px; border-width: 0 1.5px 1.5px 0; }
 
         .tcHdr {
-          font-size: 7.5px; letter-spacing: 0.2em; color: rgba(255,255,255,0.26);
+          font-size: 9.5px; letter-spacing: 0.22em; color: rgba(255,255,255,0.28);
           text-transform: uppercase; font-family: var(--font-geist-mono, monospace);
-          margin-bottom: 6px;
+          margin-bottom: 14px;
         }
 
         .tcVis { width: 100%; aspect-ratio: 1; }
 
         .tcReadout {
           width: 100%; border-top: 1px solid rgba(255,255,255,0.08);
-          margin-top: 8px; padding-top: 8px;
-          display: flex; flex-direction: column; gap: 5px;
+          margin-top: 16px; padding-top: 16px;
         }
+        .tcReadoutInner { display: flex; flex-direction: column; gap: 10px; }
 
         .tcRRow { display: flex; justify-content: space-between; align-items: center; }
-        .tcRKey { font-size: 7.5px; letter-spacing: 0.1em; color: rgba(255,255,255,0.28); text-transform: uppercase; font-family: var(--font-geist-mono, monospace); }
-        .tcRVal { font-size: 8.5px; letter-spacing: 0.08em; color: rgba(255,255,255,0.85); text-transform: uppercase; font-family: var(--font-geist-mono, monospace); }
+        .tcRKey { font-size: 9.5px; letter-spacing: 0.1em; color: rgba(255,255,255,0.3); text-transform: uppercase; font-family: var(--font-geist-mono, monospace); }
+        .tcRVal { font-size: 10.5px; letter-spacing: 0.08em; color: rgba(255,255,255,0.86); text-transform: uppercase; font-family: var(--font-geist-mono, monospace); }
 
         .tcFoot {
           width: 100%; display: flex; justify-content: space-between;
-          margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.06);
-          font-size: 7px; letter-spacing: 0.1em; color: rgba(255,255,255,0.18);
+          margin-top: 18px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.06);
+          font-size: 9px; letter-spacing: 0.1em; color: rgba(255,255,255,0.2);
           text-transform: uppercase; font-family: var(--font-geist-mono, monospace);
         }
 
         /* right matrix */
         .teRight {
-          border: 1px solid rgba(255,255,255,0.12); padding: 14px 16px;
+          border: 1px solid rgba(255,255,255,0.12); padding: 24px 26px;
           display: flex; flex-direction: column;
         }
 
         .tmHdr {
           display: flex; justify-content: space-between; align-items: center;
-          margin-bottom: 12px; padding-bottom: 8px;
+          margin-bottom: 18px; padding-bottom: 14px;
           border-bottom: 1px solid rgba(255,255,255,0.07);
         }
         .tmHdrTxt {
-          font-size: 8.5px; letter-spacing: 0.16em; color: rgba(255,255,255,0.43);
+          font-size: 10.5px; letter-spacing: 0.16em; color: rgba(255,255,255,0.45);
           text-transform: uppercase; font-family: var(--font-geist-mono, monospace);
         }
         .tmLive {
-          display: flex; align-items: center; gap: 6px;
-          font-size: 7.5px; letter-spacing: 0.1em; color: rgba(255,255,255,0.36);
+          display: flex; align-items: center; gap: 8px;
+          font-size: 9.5px; letter-spacing: 0.1em; color: rgba(255,255,255,0.38);
           font-family: var(--font-geist-mono, monospace);
         }
 
         .tmDot {
-          display: inline-block; width: 5px; height: 5px; border-radius: 50%;
+          display: inline-block; width: 6px; height: 6px; border-radius: 50%;
           background: rgba(255,255,255,0.52); animation: tmBlink 2s ease-in-out infinite;
         }
         @keyframes tmBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0.15; } }
 
         .tmBody { display: flex; flex-direction: column; flex: 1; }
 
-        .tmRow { display: flex; flex-direction: column; gap: 5px; padding: 9px 0; }
+        .tmRow { display: flex; flex-direction: column; gap: 8px; padding: 14px 0; }
         .tmDiv { height: 1px; background: rgba(255,255,255,0.06); }
 
         .tmKey {
-          font-size: 7.5px; letter-spacing: 0.14em; color: rgba(255,255,255,0.3);
+          font-size: 9.5px; letter-spacing: 0.14em; color: rgba(255,255,255,0.32);
           text-transform: uppercase; font-family: var(--font-geist-mono, monospace);
         }
         .tmVal {
-          font-size: 11px; letter-spacing: 0.07em; color: rgba(255,255,255,0.9);
+          font-size: 14px; letter-spacing: 0.06em; color: rgba(255,255,255,0.92);
           text-transform: uppercase; font-family: var(--font-geist-mono, monospace);
-          line-height: 1.3; transition: all 0.22s ease;
+          line-height: 1.3;
         }
         .tmValB {
-          font-size: 12px; color: rgba(255,255,255,0.63); text-transform: none;
+          font-size: 14px; color: rgba(255,255,255,0.66); text-transform: none;
           font-family: var(--font-geist-sans, sans-serif); letter-spacing: 0;
-          line-height: 1.55; transition: all 0.22s ease;
+          line-height: 1.6;
         }
 
         .tmMeta {
-          margin-top: 12px; padding: 9px 12px;
+          margin-top: 18px; padding: 16px 18px;
           background: rgba(255,255,255,0.024); border: 1px solid rgba(255,255,255,0.07);
-          display: flex; flex-direction: column; gap: 6px;
+          display: flex; flex-direction: column; gap: 10px;
         }
         .tmMetaRow { display: flex; justify-content: space-between; align-items: center; }
-        .tmMK { font-size: 7.5px; letter-spacing: 0.1em; color: rgba(255,255,255,0.26); text-transform: uppercase; font-family: var(--font-geist-mono, monospace); }
-        .tmMV { font-size: 8px;   letter-spacing: 0.08em; color: rgba(255,255,255,0.7);  text-transform: uppercase; font-family: var(--font-geist-mono, monospace); }
+        .tmMK { font-size: 9.5px; letter-spacing: 0.1em; color: rgba(255,255,255,0.28); text-transform: uppercase; font-family: var(--font-geist-mono, monospace); }
+        .tmMV { font-size: 10px;  letter-spacing: 0.08em; color: rgba(255,255,255,0.72); text-transform: uppercase; font-family: var(--font-geist-mono, monospace); }
 
         .tmFoot {
-          display: flex; justify-content: space-between; margin-top: 10px;
-          font-size: 7px; letter-spacing: 0.1em; color: rgba(255,255,255,0.17);
+          display: flex; justify-content: space-between; margin-top: 16px;
+          font-size: 9px; letter-spacing: 0.1em; color: rgba(255,255,255,0.18);
           font-family: var(--font-geist-mono, monospace);
         }
 
@@ -767,54 +856,56 @@ export default function TrustEngineSection() {
         .teMob { display: none; position: relative; z-index: 2; }
 
         .tmiTop {
-          border: 1px solid rgba(255,255,255,0.14); padding: 14px 16px; margin-bottom: 18px;
+          border: 1px solid rgba(255,255,255,0.14); padding: 20px 20px; margin-bottom: 24px;
         }
         .tmiTopHdr {
           display: flex; justify-content: space-between; align-items: center;
-          margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.07);
-          font-size: 8.5px; letter-spacing: 0.16em; color: rgba(255,255,255,0.36);
+          margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.07);
+          font-size: 10px; letter-spacing: 0.16em; color: rgba(255,255,255,0.38);
           text-transform: uppercase; font-family: var(--font-geist-mono, monospace);
         }
         .tmiTopRow {
-          display: flex; justify-content: space-between; padding: 5px 0;
-          font-size: 8.5px; letter-spacing: 0.08em; text-transform: uppercase;
+          display: flex; justify-content: space-between; padding: 9px 0;
+          font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
           font-family: var(--font-geist-mono, monospace); border-bottom: 1px solid rgba(255,255,255,0.04);
         }
-        .tmiTK { color: rgba(255,255,255,0.3); }
-        .tmiTV { color: rgba(255,255,255,0.85); }
+        .tmiTK { color: rgba(255,255,255,0.32); }
+        .tmiTV { color: rgba(255,255,255,0.86); }
 
         .tmiCard {
-          border: 1px solid rgba(255,255,255,0.09); padding: 14px 15px;
-          margin-bottom: 6px; transition: border-color 0.2s; cursor: pointer;
+          border: 1px solid rgba(255,255,255,0.09); padding: 20px 20px;
+          margin-bottom: 12px; transition: border-color 0.2s; cursor: pointer;
         }
         .tmiCardOn { border-color: rgba(255,255,255,0.28) !important; background: rgba(255,255,255,0.02); }
 
-        .tmiCardTop { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
-        .tmiNum  { font-size: 9px;   letter-spacing: 0.1em; color: rgba(255,255,255,0.33); font-family: var(--font-geist-mono, monospace); }
-        .tmiName { font-size: 10.5px; letter-spacing: 0.09em; color: rgba(255,255,255,0.9); text-transform: uppercase; flex: 1; font-family: var(--font-geist-mono, monospace); }
+        .tmiCardTop { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+        .tmiNum  { font-size: 11px;  letter-spacing: 0.1em; color: rgba(255,255,255,0.34); font-family: var(--font-geist-mono, monospace); }
+        .tmiName { font-size: 13px; letter-spacing: 0.08em; color: rgba(255,255,255,0.92); text-transform: uppercase; flex: 1; font-family: var(--font-geist-mono, monospace); }
 
-        .tmiTxt { font-size: 12px; line-height: 1.55; color: rgba(255,255,255,0.5); margin: 0 0 12px; font-family: var(--font-geist-sans, sans-serif); }
+        .tmiTxt { font-size: 14px; line-height: 1.62; color: rgba(255,255,255,0.55); margin: 0 0 16px; font-family: var(--font-geist-sans, sans-serif); }
 
-        .tmiRow2 { display: flex; flex-direction: column; gap: 4px; padding: 8px 0; border-top: 1px solid rgba(255,255,255,0.05); }
-        .tmiVal2 { font-size: 11.5px; color: rgba(255,255,255,0.6); line-height: 1.48; font-family: var(--font-geist-sans, sans-serif); }
+        .tmiRow2 { display: flex; flex-direction: column; gap: 6px; padding: 12px 0; border-top: 1px solid rgba(255,255,255,0.05); }
+        .tmiVal2 { font-size: 13.5px; color: rgba(255,255,255,0.64); line-height: 1.55; font-family: var(--font-geist-sans, sans-serif); }
 
-        .tmiMeter { display: flex; align-items: center; gap: 8px; margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); }
+        .tmiMeter { display: flex; align-items: center; gap: 12px; margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.05); }
 
         /* responsive */
         @media (max-width: 1100px) {
-          .teGrid { grid-template-columns: 1fr 224px 1fr; gap: 14px; }
+          .te { padding: 80px 48px 88px; }
+          .teGrid { grid-template-columns: 1fr 280px 1fr; gap: 24px; }
         }
         @media (max-width: 900px) {
-          .te { padding: 44px 28px 56px; }
-          .teGrid { grid-template-columns: 1fr 204px 1fr; gap: 10px; }
+          .te { padding: 72px 36px 80px; }
+          .teGrid { grid-template-columns: 1fr 250px 1fr; gap: 18px; }
         }
         @media (max-width: 768px) {
-          .te     { padding: 44px 18px 56px; }
+          .te     { padding: 64px 22px 72px; height: auto; display: block; justify-content: flex-start; }
           .teGrid { display: none; }
           .teMob  { display: block; }
-          .teBgW1 { font-size: 60px; }
-          .teBgW2 { font-size: 44px; }
-          .teBgW3 { font-size: 36px; }
+          .teHead { margin-bottom: 40px; }
+          .teBgW1 { font-size: 72px; }
+          .teBgW2 { font-size: 52px; }
+          .teBgW3 { font-size: 42px; }
         }
 
         /* reduced motion */
@@ -823,6 +914,6 @@ export default function TrustEngineSection() {
           .tmDot  { animation: none; }
         }
       `}</style>
-    </div>
+    </motion.div>
   );
 }

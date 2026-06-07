@@ -2,6 +2,9 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
+import { motion, AnimatePresence } from 'framer-motion';
+
+const STEP_EASE = [0.22, 1, 0.36, 1] as const;
 
 const useIsoEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
@@ -497,38 +500,49 @@ export default function ProcessBlueprintSection() {
             </div>
 
             <div className="metaPanelBody">
-              <div className="metaRow">
-                <span className="metaLabel">ACTIVE PHASE</span>
-                <span className="metaValLarge">{step.id}</span>
-              </div>
-              <div className="metaSep" />
-              <div className="metaRow metaRowWrap">
-                <span className="metaLabel">MODE</span>
-                <span className="metaVal">{step.mode}</span>
-              </div>
-              <div className="metaSep" />
-
-              <div className="metaSection">
-                <span className="metaSectionLabel">INPUT</span>
-                {step.input.map((item, i) => (
-                  <div key={i} className="metaListRow">
-                    <span className="metaBullet">·</span>
-                    <span className="metaListItem">{item}</span>
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeStep}
+                  style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}
+                  initial={{ opacity: 0, x: 16, filter: 'blur(6px)' }}
+                  animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
+                  exit={{ opacity: 0, x: -16, filter: 'blur(6px)' }}
+                  transition={{ duration: 0.45, ease: STEP_EASE }}
+                >
+                  <div className="metaRow">
+                    <span className="metaLabel">ACTIVE PHASE</span>
+                    <span className="metaValLarge">{step.id}</span>
                   </div>
-                ))}
-              </div>
-
-              <div className="metaSep" />
-
-              <div className="metaSection">
-                <span className="metaSectionLabel">OUTPUT</span>
-                {step.output.map((item, i) => (
-                  <div key={i} className="metaListRow">
-                    <span className="metaBullet">·</span>
-                    <span className="metaListItem">{item}</span>
+                  <div className="metaSep" />
+                  <div className="metaRow metaRowWrap">
+                    <span className="metaLabel">MODE</span>
+                    <span className="metaVal">{step.mode}</span>
                   </div>
-                ))}
-              </div>
+                  <div className="metaSep" />
+
+                  <div className="metaSection">
+                    <span className="metaSectionLabel">INPUT</span>
+                    {step.input.map((item, i) => (
+                      <div key={i} className="metaListRow">
+                        <span className="metaBullet">·</span>
+                        <span className="metaListItem">{item}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="metaSep" />
+
+                  <div className="metaSection">
+                    <span className="metaSectionLabel">OUTPUT</span>
+                    {step.output.map((item, i) => (
+                      <div key={i} className="metaListRow">
+                        <span className="metaBullet">·</span>
+                        <span className="metaListItem">{item}</span>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              </AnimatePresence>
             </div>
 
             <div className="metaPanelFooter">
@@ -657,22 +671,22 @@ export default function ProcessBlueprintSection() {
         .processHeader {
           width: 100%;
           max-width: 1200px;
-          padding-top: 10px;
-          padding-bottom: 8px;
+          padding-top: 14px;
+          padding-bottom: 16px;
           border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-          margin-bottom: 8px;
+          margin-bottom: 18px;
           flex-shrink: 0;
           display: flex;
           align-items: baseline;
-          gap: 24px;
+          gap: 28px;
           flex-wrap: wrap;
         }
 
         .processSectionTag {
           font-family: ui-monospace, SFMono-Regular, monospace;
-          font-size: 9px;
+          font-size: 10.5px;
           font-weight: 700;
-          letter-spacing: 0.18em;
+          letter-spacing: 0.2em;
           text-transform: uppercase;
           color: rgba(255, 255, 255, 0.32);
           white-space: nowrap;
@@ -681,11 +695,11 @@ export default function ProcessBlueprintSection() {
 
         .processHeading {
           margin: 0;
-          font-size: clamp(13px, 1.4vw, 20px);
+          font-size: clamp(16px, 1.9vw, 28px);
           font-weight: 380;
-          letter-spacing: -0.03em;
-          line-height: 1;
-          color: rgba(255, 255, 255, 0.9);
+          letter-spacing: -0.02em;
+          line-height: 1.05;
+          color: rgba(255, 255, 255, 0.92);
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -722,8 +736,8 @@ export default function ProcessBlueprintSection() {
         .stepItem {
           display: flex;
           align-items: center;
-          gap: 7px;
-          padding: 0 11px;
+          gap: 10px;
+          padding: 0 16px;
           flex: 1;
           min-height: 0;
           background: transparent;
@@ -765,7 +779,7 @@ export default function ProcessBlueprintSection() {
 
         .stepNum {
           font-family: ui-monospace, monospace;
-          font-size: 8.5px;
+          font-size: 10.5px;
           letter-spacing: 0.05em;
           color: rgba(255, 255, 255, 0.24);
           flex-shrink: 0;
@@ -778,7 +792,7 @@ export default function ProcessBlueprintSection() {
 
         .stepName {
           font-family: ui-monospace, monospace;
-          font-size: 9.5px;
+          font-size: 11.5px;
           font-weight: 700;
           letter-spacing: 0.1em;
           text-transform: uppercase;
@@ -793,13 +807,13 @@ export default function ProcessBlueprintSection() {
 
         .stepStatusChip {
           font-family: ui-monospace, monospace;
-          font-size: 6.5px;
+          font-size: 8.5px;
           font-weight: 700;
           letter-spacing: 0.1em;
           text-transform: uppercase;
           color: rgba(255, 255, 255, 0.55);
           border: 1px solid rgba(255, 255, 255, 0.2);
-          padding: 2px 5px;
+          padding: 3px 7px;
           flex-shrink: 0;
           white-space: nowrap;
         }
@@ -827,15 +841,15 @@ export default function ProcessBlueprintSection() {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 3px 7px;
+          padding: 7px 12px;
           border-bottom: 1px solid rgba(255, 255, 255, 0.07);
-          margin-bottom: 6px;
+          margin-bottom: 10px;
           flex-shrink: 0;
         }
 
         .blueprintBar span {
           font-family: ui-monospace, monospace;
-          font-size: 8px;
+          font-size: 10px;
           font-weight: 700;
           letter-spacing: 0.1em;
           text-transform: uppercase;
@@ -897,14 +911,14 @@ export default function ProcessBlueprintSection() {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 6px 10px;
+          padding: 9px 13px;
           border-bottom: 1px solid rgba(255, 255, 255, 0.09);
           background: rgba(255, 255, 255, 0.025);
           flex-shrink: 0;
         }
 
         .metaPanelTitle {
-          font-size: 8px;
+          font-size: 10px;
           font-weight: 700;
           letter-spacing: 0.14em;
           text-transform: uppercase;
@@ -929,7 +943,7 @@ export default function ProcessBlueprintSection() {
 
         .metaPanelBody {
           flex: 1;
-          padding: 8px 10px;
+          padding: 14px 14px;
           overflow: hidden;
           display: flex;
           flex-direction: column;
@@ -939,8 +953,8 @@ export default function ProcessBlueprintSection() {
           display: flex;
           justify-content: space-between;
           align-items: baseline;
-          gap: 6px;
-          padding: 2px 0;
+          gap: 8px;
+          padding: 4px 0;
         }
 
         .metaRowWrap {
@@ -948,23 +962,23 @@ export default function ProcessBlueprintSection() {
         }
 
         .metaLabel {
-          font-size: 7.5px;
+          font-size: 9.5px;
           letter-spacing: 0.12em;
           text-transform: uppercase;
-          color: rgba(255, 255, 255, 0.28);
+          color: rgba(255, 255, 255, 0.3);
           flex-shrink: 0;
         }
 
         .metaVal {
-          font-size: 8px;
+          font-size: 10px;
           letter-spacing: 0.05em;
-          color: rgba(255, 255, 255, 0.6);
+          color: rgba(255, 255, 255, 0.62);
           text-align: right;
-          line-height: 1.45;
+          line-height: 1.5;
         }
 
         .metaValLarge {
-          font-size: 18px;
+          font-size: 28px;
           font-weight: 700;
           color: rgba(255, 255, 255, 0.9);
           letter-spacing: 0.04em;
@@ -981,22 +995,22 @@ export default function ProcessBlueprintSection() {
         .metaSection {
           display: flex;
           flex-direction: column;
-          gap: 1px;
-          padding: 2px 0;
+          gap: 3px;
+          padding: 4px 0;
         }
 
         .metaSectionLabel {
-          font-size: 7px;
+          font-size: 9px;
           letter-spacing: 0.12em;
           text-transform: uppercase;
-          color: rgba(255, 255, 255, 0.26);
-          margin-bottom: 3px;
+          color: rgba(255, 255, 255, 0.28);
+          margin-bottom: 5px;
         }
 
         .metaListRow {
           display: flex;
           align-items: center;
-          gap: 5px;
+          gap: 7px;
         }
 
         .metaBullet {
@@ -1007,24 +1021,24 @@ export default function ProcessBlueprintSection() {
         }
 
         .metaListItem {
-          font-size: 7.5px;
+          font-size: 9.5px;
           letter-spacing: 0.05em;
-          color: rgba(255, 255, 255, 0.52);
-          line-height: 1.5;
+          color: rgba(255, 255, 255, 0.55);
+          line-height: 1.55;
         }
 
         .metaPanelFooter {
-          padding: 6px 10px;
+          padding: 9px 13px;
           border-top: 1px solid rgba(255, 255, 255, 0.09);
           flex-shrink: 0;
         }
 
         .metaStatusChip {
-          font-size: 7.5px;
+          font-size: 9px;
           font-weight: 700;
           letter-spacing: 0.12em;
           text-transform: uppercase;
-          padding: 2px 6px;
+          padding: 3px 8px;
           border: 1px solid rgba(255, 255, 255, 0.22);
           color: rgba(255, 255, 255, 0.7);
         }
@@ -1039,7 +1053,7 @@ export default function ProcessBlueprintSection() {
         }
 
         .metaCoords span {
-          font-size: 7.5px;
+          font-size: 9px;
           letter-spacing: 0.1em;
           color: rgba(255, 255, 255, 0.2);
         }
