@@ -361,10 +361,6 @@ export default function CoinOrbitHero() {
   const overlayPanelRefs = useRef<HTMLDivElement[]>([]);
   const sideProgressFillRef = useRef<HTMLSpanElement | null>(null);
   const sideProgressTickRefs = useRef<HTMLSpanElement[]>([]);
-  const telemetryCursorXRef = useRef<HTMLElement | null>(null);
-  const telemetryCursorYRef = useRef<HTMLElement | null>(null);
-  const telemetryScrollRef = useRef<HTMLElement | null>(null);
-  const telemetryTimeRef = useRef<HTMLElement | null>(null);
   const systemsIntroRef = useRef<HTMLDivElement | null>(null);
   const systemsIndustryMatrixRef = useRef<HTMLDivElement | null>(null);
   const systemsCapabilitiesRef = useRef<HTMLDivElement | null>(null);
@@ -1124,10 +1120,6 @@ export default function CoinOrbitHero() {
         glowSprite.scale.set(ns, ns, 1);
       }
 
-      if (telemetryTimeRef.current) {
-        telemetryTimeRef.current.textContent = `${((now - telemetryStartTime) / 1000).toFixed(1)}s`;
-      }
-
       if (systemsLogoModel) {
         const logoTarget = systemsLogoModelVisible ? 0.18 : 0;
         systemsLogoModelOpacity += (logoTarget - systemsLogoModelOpacity) * 0.04;
@@ -1203,16 +1195,6 @@ export default function CoinOrbitHero() {
     renderer.domElement.addEventListener('pointermove', onPointerMove);
     renderer.domElement.addEventListener('pointerleave', onPointerLeave);
 
-    const updateTelemetryCursor = (event: PointerEvent) => {
-      if (telemetryCursorXRef.current) {
-        telemetryCursorXRef.current.textContent = `${Math.round(event.clientX)}`;
-      }
-      if (telemetryCursorYRef.current) {
-        telemetryCursorYRef.current.textContent = `${Math.round(event.clientY)}`;
-      }
-    };
-    window.addEventListener('pointermove', updateTelemetryCursor, { passive: true });
-
     if ('ResizeObserver' in window) {
       resizeObserver = new ResizeObserver(onResize);
       resizeObserver.observe(container);
@@ -1238,11 +1220,6 @@ export default function CoinOrbitHero() {
     }
 
     if (!prefersReducedMotion && sectionRef.current) {
-      const scrollStart = isMobile ? 0 : 'top top';
-      const scrollEnd = isMobile
-        ? () => `+=${Math.round(window.innerHeight * 13.0)}`
-        : () => `+=${Math.round(window.innerHeight * 9.5)}`;
-
       const mobileScrollTargets = {
         progress: 1,
         radiusBoost: 1.62,
@@ -1369,199 +1346,162 @@ export default function CoinOrbitHero() {
         // forth never replays it.
         let vaultBooted = false;
 
-        scrollTimeline = gsap.timeline({
-          scrollTrigger: {
-            trigger: sectionRef.current,
-            start: scrollStart,
-            end: scrollEnd,
-            scrub: isMobile ? 0.22 : 0.34,
-            pin: shouldPin,
-            anticipatePin: 1,
-            invalidateOnRefresh: true,
-            fastScrollEnd: true,
-            onUpdate: (self) => {
-              if (telemetryScrollRef.current) {
-                telemetryScrollRef.current.textContent = self.progress.toFixed(3);
-              }
-
-              const timePos = self.animation?.time() ?? 0;
-              systemsLogoModelVisible = timePos >= sectionALogoAt && timePos <= sectionBEnterAt + 0.1;
-
-              if (!vaultBooted && timePos >= sectionBEnterAt + 0.12) {
-                vaultBooted = true;
-                window.dispatchEvent(new CustomEvent('vaultBoot'));
-              }
-
-              const progress = self.progress;
-
-              if (sideProgressFillRef.current) {
-                gsap.set(sideProgressFillRef.current, { scaleY: progress });
-              }
-
-              const ticks = sideProgressTickRefs.current;
-              const totalTicks = ticks.length;
-              ticks.forEach((tick, index) => {
-                const tickProgress = totalTicks <= 1 ? 0 : index / (totalTicks - 1);
-                if (progress >= tickProgress) {
-                  tick.classList.add('isActive');
-                } else {
-                  tick.classList.remove('isActive');
-                }
-              });
-
-              // Drive ProcessBlueprintSection step via scroll position
-              const cPanelEnterAt = sectionBEnterAt + panelStep;
-              if (timePos >= cPanelEnterAt && timePos <= cPanelEnterAt + 1.6) {
-                const stepRaw = Math.max(0, Math.min(1, (timePos - cPanelEnterAt) / 1.4));
-                const bpStep = Math.min(5, Math.floor(stepRaw * 6));
-                window.dispatchEvent(new CustomEvent('blueprintStep', { detail: bpStep }));
-              }
-
-              // Drive TrustEngineSection signal via scroll position
-              const dPanelEnterAt = sectionBEnterAt + 2 * panelStep;
-              if (timePos >= dPanelEnterAt) {
-                const sigRaw = Math.max(0, Math.min(1, (timePos - dPanelEnterAt) / 1.4));
-                const sigIdx = Math.min(5, Math.floor(sigRaw * 6));
-                window.dispatchEvent(new CustomEvent('trustSignal', { detail: sigIdx }));
-              }
-            },
-          },
-        });
-
-        scrollTimeline
-          .to(scrollStateTarget, { ...scrollTargets, ease: 'none', duration: 1 }, 0)
-
-          .to(ctaRef.current, {
-            opacity: 0, y: -12, scale: 0.96, pointerEvents: 'none', duration: 0.12, ease: 'none',
-          }, 0.04)
-
-          .to(subtitleRef.current, {
-            opacity: 0, y: -14, scale: 0.97, duration: 0.14, ease: 'none',
-          }, 0.10)
-
-          .to(headingRef.current, {
-            opacity: 0, y: -18, scale: 0.975, duration: 0.16, ease: 'none',
-          }, 0.16)
-
-          .to(brandMarkRef.current, {
-            opacity: 0, y: -14, scale: 0.96, duration: 0.14, ease: 'none',
-          }, 0.20)
-
-          .to(specializationInnerRef.current, {
-            autoAlpha: 1, y: 0, scale: 1, filter: 'blur(0px)', pointerEvents: 'auto', duration: 0.72, ease: 'power2.out',
-          }, 0.34)
-
-          .to(specializationKickerRef.current, {
-            autoAlpha: 1, y: 0, filter: 'blur(0px)', duration: 0.32, ease: 'power2.out',
-          }, 0.42)
-
-          .to(specializationHeadingLineRefs.current, {
-            autoAlpha: 1, y: 0, filter: 'blur(0px)', duration: 0.54, stagger: 0.075, ease: 'power3.out',
-          }, 0.48)
-
-          .to(specializationTextRef.current, {
-            autoAlpha: 1, y: 0, filter: 'blur(0px)', duration: 0.42, ease: 'power2.out',
-          }, 0.76)
-
-          .to(specializationActionsRef.current, {
-            autoAlpha: 1, y: 0, filter: 'blur(0px)', pointerEvents: 'auto', duration: 0.38, ease: 'power2.out',
-          }, 0.88);
-
-        scrollTimeline?.to(
-          specializationInnerRef.current,
-          {
-            autoAlpha: 0,
-            y: -window.innerHeight * 0.18,
-            scale: 1.05,
-            filter: 'blur(24px)',
-            pointerEvents: 'none',
-            duration: 0.42,
-            ease: 'power2.in',
-          },
-          1.05,
-        );
-
-        const overlayPanels = overlayPanelRefs.current;
-        const panelTimings = overlayPanels.map((_, index) => {
-          if (index === 0) {
-            return { enterAt: sectionAEnterAt, exitAt: sectionBEnterAt - 0.22 };
+        const onScrollUpdate = (self: ScrollTrigger) => {
+          const timePos = self.animation?.time() ?? 0;
+          systemsLogoModelVisible = timePos >= sectionALogoAt && timePos <= sectionBEnterAt + 0.1;
+          if (!vaultBooted && timePos >= sectionBEnterAt + 0.12) {
+            vaultBooted = true;
+            window.dispatchEvent(new CustomEvent('vaultBoot'));
           }
-          const enterAt = sectionBEnterAt + (index - 1) * panelStep;
-          return { enterAt, exitAt: enterAt + 1.6 };
-        });
+          const progress = self.progress;
+          if (sideProgressFillRef.current) {
+            gsap.set(sideProgressFillRef.current, { scaleY: progress });
+          }
+          const ticks = sideProgressTickRefs.current;
+          const totalTicks = ticks.length;
+          ticks.forEach((tick, index) => {
+            const tickProgress = totalTicks <= 1 ? 0 : index / (totalTicks - 1);
+            if (progress >= tickProgress) tick.classList.add('isActive');
+            else tick.classList.remove('isActive');
+          });
+          // Drive ProcessBlueprintSection step via scroll position
+          const cPanelEnterAt = sectionBEnterAt + panelStep;
+          if (timePos >= cPanelEnterAt && timePos <= cPanelEnterAt + 1.6) {
+            const stepRaw = Math.max(0, Math.min(1, (timePos - cPanelEnterAt) / 1.4));
+            const bpStep = Math.min(5, Math.floor(stepRaw * 6));
+            window.dispatchEvent(new CustomEvent('blueprintStep', { detail: bpStep }));
+          }
+          // Drive TrustEngineSection signal via scroll position
+          const dPanelEnterAt = sectionBEnterAt + 2 * panelStep;
+          if (timePos >= dPanelEnterAt) {
+            const sigRaw = Math.max(0, Math.min(1, (timePos - dPanelEnterAt) / 1.4));
+            const sigIdx = Math.min(5, Math.floor(sigRaw * 6));
+            window.dispatchEvent(new CustomEvent('trustSignal', { detail: sigIdx }));
+          }
+        };
 
-        overlayPanels.forEach((panel, index) => {
-          const { enterAt, exitAt } = panelTimings[index];
+        const buildTimeline = (tl: gsap.core.Timeline) => {
+          tl
+            .to(scrollStateTarget, { ...scrollTargets, ease: 'none', duration: 1 }, 0)
+            .to(ctaRef.current, {
+              opacity: 0, y: -12, scale: 0.96, pointerEvents: 'none', duration: 0.12, ease: 'none',
+            }, 0.04)
+            .to(subtitleRef.current, {
+              opacity: 0, y: -14, scale: 0.97, duration: 0.14, ease: 'none',
+            }, 0.10)
+            .to(headingRef.current, {
+              opacity: 0, y: -18, scale: 0.975, duration: 0.16, ease: 'none',
+            }, 0.16)
+            .to(brandMarkRef.current, {
+              opacity: 0, y: -14, scale: 0.96, duration: 0.14, ease: 'none',
+            }, 0.20)
+            .to(specializationInnerRef.current, {
+              autoAlpha: 1, y: 0, scale: 1, filter: 'blur(0px)', pointerEvents: 'auto', duration: 0.72, ease: 'power2.out',
+            }, 0.34)
+            .to(specializationKickerRef.current, {
+              autoAlpha: 1, y: 0, filter: 'blur(0px)', duration: 0.32, ease: 'power2.out',
+            }, 0.42)
+            .to(specializationHeadingLineRefs.current, {
+              autoAlpha: 1, y: 0, filter: 'blur(0px)', duration: 0.54, stagger: 0.075, ease: 'power3.out',
+            }, 0.48)
+            .to(specializationTextRef.current, {
+              autoAlpha: 1, y: 0, filter: 'blur(0px)', duration: 0.42, ease: 'power2.out',
+            }, 0.76)
+            .to(specializationActionsRef.current, {
+              autoAlpha: 1, y: 0, filter: 'blur(0px)', pointerEvents: 'auto', duration: 0.38, ease: 'power2.out',
+            }, 0.88)
+            .to(specializationInnerRef.current, {
+              autoAlpha: 0,
+              y: -window.innerHeight * 0.18,
+              scale: 1.05,
+              filter: 'blur(24px)',
+              pointerEvents: 'none',
+              duration: 0.42,
+              ease: 'power2.in',
+            }, 1.05);
 
-          scrollTimeline?.to(
-            panel,
-            {
-              autoAlpha: 1,
-              y: 0,
-              scale: 1,
-              filter: 'blur(0px)',
-              duration: 0.72,
-              ease: 'power3.out',
-            },
-            enterAt,
-          );
-
-          if (index < overlayPanels.length - 1) {
-            scrollTimeline?.to(
-              panel,
-              {
+          const overlayPanels = overlayPanelRefs.current;
+          const panelTimings = overlayPanels.map((_, index) => {
+            if (index === 0) return { enterAt: sectionAEnterAt, exitAt: sectionBEnterAt - 0.22 };
+            const enterAt = sectionBEnterAt + (index - 1) * panelStep;
+            return { enterAt, exitAt: enterAt + 1.6 };
+          });
+          overlayPanels.forEach((panel, index) => {
+            const { enterAt, exitAt } = panelTimings[index];
+            tl.to(panel, {
+              autoAlpha: 1, y: 0, scale: 1, filter: 'blur(0px)', duration: 0.72, ease: 'power3.out',
+            }, enterAt);
+            if (index < overlayPanels.length - 1) {
+              tl.to(panel, {
                 autoAlpha: 0,
                 y: -window.innerHeight * 0.26,
                 scale: 1.06,
                 filter: 'blur(26px)',
                 duration: 0.46,
                 ease: 'power2.in',
-              },
-              exitAt,
-            );
-          }
+              }, exitAt);
+            }
+          });
+
+          // Stagger the Selected Work heading + cards in as Section B reveals.
+          tl.to('.vaultReveal', {
+            autoAlpha: 1, y: 0, scale: 1, filter: 'blur(0px)',
+            duration: 0.7, stagger: 0.1, ease: 'power3.out',
+          }, sectionBEnterAt + 0.12)
+            .to(systemsIndexLogoRef.current, {
+              autoAlpha: 1, scale: 1, filter: 'blur(0px)', duration: 0.6, ease: 'power2.out',
+            }, sectionALogoAt)
+            .to(systemsIntroRef.current, {
+              autoAlpha: 1, y: 0, filter: 'blur(0px)', duration: 0.6, ease: 'power3.out',
+            }, sectionAIntroAt)
+            .to(systemsIndustryMatrixRef.current, {
+              autoAlpha: 1, y: 0, filter: 'blur(0px)', duration: 0.65, ease: 'power3.out',
+            }, sectionAMatrixAt)
+            .to(systemsCapabilitiesRef.current, {
+              autoAlpha: 1, y: 0, filter: 'blur(0px)', duration: 0.6, ease: 'power2.out',
+            }, sectionACapabilitiesAt);
+        };
+
+        const mm = gsap.matchMedia();
+
+        // Desktop/tablet: pin starts once the section bottom reaches viewport bottom
+        // (section fully visible), then scroll drives the full timeline.
+        mm.add('(min-width: 769px)', () => {
+          scrollTimeline = gsap.timeline({
+            scrollTrigger: {
+              trigger: sectionRef.current,
+              start: 'bottom bottom',
+              end: '+=2400',
+              scrub: 0.7,
+              pin: shouldPin,
+              pinSpacing: true,
+              anticipatePin: 1,
+              invalidateOnRefresh: true,
+              onUpdate: onScrollUpdate,
+            },
+          });
+          buildTimeline(scrollTimeline);
         });
 
-        // Stagger the Selected Work heading + cards in as Section B reveals.
-        scrollTimeline?.to('.vaultReveal', {
-          autoAlpha: 1,
-          y: 0,
-          scale: 1,
-          filter: 'blur(0px)',
-          duration: 0.7,
-          stagger: 0.1,
-          ease: 'power3.out',
-        }, sectionBEnterAt + 0.12);
+        // Mobile: section may be taller than viewport, so pin when the top of
+        // the section reaches the top of the viewport instead.
+        mm.add('(max-width: 768px)', () => {
+          scrollTimeline = gsap.timeline({
+            scrollTrigger: {
+              trigger: sectionRef.current,
+              start: 'top top',
+              end: '+=1600',
+              scrub: 0.3,
+              pin: shouldPin,
+              pinSpacing: true,
+              anticipatePin: 1,
+              invalidateOnRefresh: true,
+              onUpdate: onScrollUpdate,
+            },
+          });
+          buildTimeline(scrollTimeline);
+        });
 
-        scrollTimeline
-          ?.to(systemsIndexLogoRef.current, {
-            autoAlpha: 1,
-            scale: 1,
-            filter: 'blur(0px)',
-            duration: 0.6,
-            ease: 'power2.out',
-          }, sectionALogoAt)
-          .to(systemsIntroRef.current, {
-            autoAlpha: 1,
-            y: 0,
-            filter: 'blur(0px)',
-            duration: 0.6,
-            ease: 'power3.out',
-          }, sectionAIntroAt)
-          .to(systemsIndustryMatrixRef.current, {
-            autoAlpha: 1,
-            y: 0,
-            filter: 'blur(0px)',
-            duration: 0.65,
-            ease: 'power3.out',
-          }, sectionAMatrixAt)
-          .to(systemsCapabilitiesRef.current, {
-            autoAlpha: 1,
-            y: 0,
-            filter: 'blur(0px)',
-            duration: 0.6,
-            ease: 'power2.out',
-          }, sectionACapabilitiesAt);
       }, sectionRef);
 
       requestAnimationFrame(() => {
@@ -1569,7 +1509,6 @@ export default function CoinOrbitHero() {
       });
     }
 
-    const telemetryStartTime = performance.now();
     lastFrameTime = performance.now();
     animate();
 
@@ -1580,8 +1519,6 @@ export default function CoinOrbitHero() {
       renderer.domElement.removeEventListener('click', onClick);
       renderer.domElement.removeEventListener('pointermove', onPointerMove);
       renderer.domElement.removeEventListener('pointerleave', onPointerLeave);
-
-      window.removeEventListener('pointermove', updateTelemetryCursor);
 
       if (resizeObserver) resizeObserver.disconnect();
       else window.removeEventListener('resize', onResize);
@@ -1875,19 +1812,6 @@ export default function CoinOrbitHero() {
               />
             ))}
           </div>
-        </div>
-        <div className="telemetryPanel">
-          <span>Cursor X:</span>
-          <b ref={telemetryCursorXRef}>0</b>
-
-          <span>Cursor Y:</span>
-          <b ref={telemetryCursorYRef}>0</b>
-
-          <span>Scroll:</span>
-          <b ref={telemetryScrollRef}>0.000</b>
-
-          <span>Time:</span>
-          <b ref={telemetryTimeRef}>0.0s</b>
         </div>
       </div>
 
@@ -2421,32 +2345,6 @@ export default function CoinOrbitHero() {
           box-shadow: 0 0 10px rgba(255, 255, 255, 0.24);
         }
 
-        .telemetryPanel {
-          position: absolute;
-          right: 0;
-          bottom: 0;
-          width: 330px;
-          height: 58px;
-          padding: 12px 18px;
-          display: grid;
-          grid-template-columns: auto 1fr auto 1fr;
-          gap: 6px 18px;
-          align-items: center;
-          border-top: 1px solid rgba(255, 255, 255, 0.12);
-          border-left: 1px solid rgba(255, 255, 255, 0.12);
-          color: rgba(255, 255, 255, 0.54);
-          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
-          font-size: 10px;
-          font-weight: 800;
-          letter-spacing: 0.055em;
-          text-transform: uppercase;
-        }
-
-        .telemetryPanel b {
-          color: rgba(255, 255, 255, 0.88);
-          font-weight: 800;
-        }
-
         .overlayPanelStack {
           position: absolute;
           inset: 0;
@@ -2858,10 +2756,6 @@ export default function CoinOrbitHero() {
 
           .portfolioFrame {
             inset: 6px;
-          }
-
-          .telemetryPanel {
-            display: none;
           }
 
           .sideProgress {

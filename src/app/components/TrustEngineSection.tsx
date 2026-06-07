@@ -188,18 +188,6 @@ function TrustCoreSVG({
     return { x: cx + 138 * Math.cos(angle), y: cy + 138 * Math.sin(angle) };
   });
 
-  const ticks = Array.from({ length: 36 }, (_, i) => {
-    const a = (i / 36) * 2 * Math.PI;
-    const major = i % 9 === 0;
-    const med   = i % 3 === 0;
-    const r2 = major ? 143 : med ? 149 : 152;
-    return {
-      x1: cx + 155 * Math.cos(a), y1: cy + 155 * Math.sin(a),
-      x2: cx + r2  * Math.cos(a), y2: cy + r2  * Math.sin(a),
-      sw: major ? 1.5 : 0.75,
-    };
-  });
-
   const anim = (dur: string, dir: 1 | -1 = 1) =>
     reducedMotion ? undefined : (
       <animateTransform
@@ -226,18 +214,17 @@ function TrustCoreSVG({
 
       <circle cx={cx} cy={cy} r="185" fill="url(#tcGlow)" />
 
-      <circle cx={cx} cy={cy} r="170" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="1" />
-      <circle cx={cx} cy={cy} r="155" fill="none" stroke="rgba(255,255,255,0.09)" strokeWidth="1" />
-      <circle cx={cx} cy={cy} r="147" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="0.5" strokeDasharray="4 6" />
+      <circle cx={cx} cy={cy} r="155" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
+      <circle cx={cx} cy={cy} r="147" fill="none" stroke="rgba(255,255,255,0.025)" strokeWidth="0.5" strokeDasharray="4 6" />
 
-      <circle cx={cx} cy={cy} r="124" fill="none" stroke="rgba(255,255,255,0.11)" strokeWidth="0.5" strokeDasharray="8 7">
+      <circle cx={cx} cy={cy} r="124" fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="0.5" strokeDasharray="8 7">
         {anim('16s')}
       </circle>
 
-      <circle cx={cx} cy={cy} r="108" fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="1" />
-      <circle cx={cx} cy={cy} r="90"  fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="0.5" strokeDasharray="3 4" />
+      <circle cx={cx} cy={cy} r="108" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+      <circle cx={cx} cy={cy} r="90"  fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="0.5" strokeDasharray="3 4" />
 
-      <circle cx={cx} cy={cy} r="75" fill="none" stroke="rgba(255,255,255,0.13)" strokeWidth="0.5" strokeDasharray="6 5">
+      <circle cx={cx} cy={cy} r="75" fill="none" stroke="rgba(255,255,255,0.09)" strokeWidth="0.5" strokeDasharray="6 5">
         {anim('22s', -1)}
       </circle>
 
@@ -265,11 +252,6 @@ function TrustCoreSVG({
           />
         </g>
       </g>
-
-      {ticks.map((t, i) => (
-        <line key={i} x1={t.x1} y1={t.y1} x2={t.x2} y2={t.y2}
-          stroke="rgba(255,255,255,0.2)" strokeWidth={t.sw} />
-      ))}
 
       {nodes.map(({ x, y }, i) => {
         const active = i === activeIndex;
@@ -309,15 +291,11 @@ function TrustCoreSVG({
       <text x={cx} y={cy + 7}  textAnchor="middle" fill="rgba(255,255,255,0.94)" fontSize="20"  fontFamily="monospace" fontWeight="700" letterSpacing="0.03em">{sig.strength}%</text>
       <text x={cx} y={cy + 21} textAnchor="middle" fill="rgba(255,255,255,0.32)" fontSize="6.5" fontFamily="monospace" letterSpacing="0.12em">SIG {sig.id}</text>
 
-      <text x={cx}   y="13"    textAnchor="middle" fill="rgba(255,255,255,0.16)" fontSize="7" fontFamily="monospace">N</text>
-      <text x="390"  y={cy+3}  textAnchor="middle" fill="rgba(255,255,255,0.16)" fontSize="7" fontFamily="monospace">E</text>
-      <text x={cx}   y="392"   textAnchor="middle" fill="rgba(255,255,255,0.16)" fontSize="7" fontFamily="monospace">S</text>
-      <text x="10"   y={cy+3}  textAnchor="middle" fill="rgba(255,255,255,0.16)" fontSize="7" fontFamily="monospace">W</text>
+      <text x={cx}   y="13"    textAnchor="middle" fill="rgba(255,255,255,0.1)" fontSize="7" fontFamily="monospace">N</text>
+      <text x="390"  y={cy+3}  textAnchor="middle" fill="rgba(255,255,255,0.1)" fontSize="7" fontFamily="monospace">E</text>
+      <text x={cx}   y="392"   textAnchor="middle" fill="rgba(255,255,255,0.1)" fontSize="7" fontFamily="monospace">S</text>
+      <text x="10"   y={cy+3}  textAnchor="middle" fill="rgba(255,255,255,0.1)" fontSize="7" fontFamily="monospace">W</text>
 
-      <text x="8"   y="13"  fill="rgba(255,255,255,0.11)" fontSize="6" fontFamily="monospace">X:042</text>
-      <text x="8"   y="393" fill="rgba(255,255,255,0.11)" fontSize="6" fontFamily="monospace">Y:118</text>
-      <text x="308" y="13"  fill="rgba(255,255,255,0.11)" fontSize="6" fontFamily="monospace">Z:{sig.strength}%</text>
-      <text x="314" y="393" fill="rgba(255,255,255,0.11)" fontSize="6" fontFamily="monospace">SIG:{sig.id}</text>
     </svg>
   );
 }
@@ -385,19 +363,19 @@ export default function TrustEngineSection() {
       <span className="teBgW teBgW2" aria-hidden="true">SIGNAL</span>
       <span className="teBgW teBgW3" aria-hidden="true">MATRIX</span>
 
+      <div className="teInner">
+
       {/* ── header ──────────────────────────────────────────────────── */}
       <header className="teHead">
         <motion.span className="teLabel" variants={riseV}>SECTION D / TRUST ENGINE</motion.span>
         <motion.h2 className="teH2" variants={riseV}>WHY TEAMS CHOOSE US</motion.h2>
         <motion.p className="teSub" variants={riseV}>
-          We turn messy product ideas into clear, scalable systems built for users,
-          developers, and business outcomes.
+          Clearer decisions. Lower build risk. Interfaces that survive real users.
         </motion.p>
         <motion.div className="teMeta" variants={riseV}>
           <span className="teMetaChip">TRUST INDEX: <Counter value={sig.strength} animate={entered} />%</span>
           <span className="teMetaChip">BUILD RISK: LOW</span>
           <span className="teMetaChip">STATUS: VERIFIED</span>
-          <span className="teMetaChip">MODE: RISK REDUCTION</span>
         </motion.div>
       </header>
 
@@ -467,8 +445,6 @@ export default function TrustEngineSection() {
           <b className="tcBr tcBrTL" aria-hidden="true" /><b className="tcBr tcBrTR" aria-hidden="true" />
           <b className="tcBr tcBrBL" aria-hidden="true" /><b className="tcBr tcBrBR" aria-hidden="true" />
 
-          <div className="tcHdr">DECISION ENGINE</div>
-
           <div className="tcVis">
             {isMounted && <TrustCoreSVG activeIndex={activeIndex} reducedMotion={reducedMotion} />}
           </div>
@@ -494,15 +470,15 @@ export default function TrustEngineSection() {
           </div>
 
           <div className="tcFoot">
-            <span>MODE: RISK REDUCTION</span>
-            <span>SIG: {sig.id}/06</span>
+            <span>SIGNAL {sig.id} / 06</span>
+            <span>{sig.status}</span>
           </div>
         </motion.div>
 
         {/* RIGHT */}
         <motion.div className="teRight" variants={riseRightV}>
           <div className="tmHdr">
-            <span className="tmHdrTxt">RISK REDUCTION MATRIX</span>
+            <span className="tmHdrTxt">ACTIVE SIGNAL</span>
             <div className="tmLive"><span className="tmDot" aria-hidden="true" /><span>LIVE</span></div>
           </div>
 
@@ -538,23 +514,6 @@ export default function TrustEngineSection() {
             </AnimatePresence>
           </div>
 
-          <div className="tmMeta">
-            {([
-              ['STATUS',          'VERIFIED'       ],
-              ['MODE',            'RISK REDUCTION'  ],
-              ['CONFIDENCE',      'HIGH'            ],
-              ['SIGNAL STRENGTH', `${sig.strength}%`],
-            ] as [string, string][]).map(([k, v]) => (
-              <div key={k} className="tmMetaRow">
-                <span className="tmMK">{k}</span>
-                <span className="tmMV">{v}</span>
-              </div>
-            ))}
-          </div>
-
-          <div className="tmFoot">
-            <span>X:042</span><span>Y:118</span><span>REF: TRE-{sig.id}</span>
-          </div>
         </motion.div>
 
       </div>
@@ -611,24 +570,30 @@ export default function TrustEngineSection() {
         ))}
       </div>
 
+      </div>{/* /teInner */}
+
       {/* ── styles ──────────────────────────────────────────────────── */}
       <style jsx>{`
         /* root */
         .te {
           position: relative;
           width: 100%;
-          max-width: 1320px;
           height: 100%;
-          margin: 0 auto;
-          box-sizing: border-box;
+          background: #0a0a0a;
+          color: #ededed;
+          overflow: hidden;
+          font-family: var(--font-geist-mono, 'Courier New', monospace);
+        }
+
+        .teInner {
+          width: min(calc(100% - 40px), 1200px);
+          margin-inline: auto;
           display: flex;
           flex-direction: column;
           justify-content: center;
-          background: #0a0a0a;
-          color: #ededed;
-          padding: clamp(36px, 6vh, 76px) clamp(28px, 4vw, 72px);
-          overflow: hidden;
-          font-family: var(--font-geist-mono, 'Courier New', monospace);
+          padding: clamp(36px, 6vh, 76px) 0;
+          height: 100%;
+          box-sizing: border-box;
         }
 
         /* background grid */
@@ -646,9 +611,9 @@ export default function TrustEngineSection() {
           font-weight: 900; letter-spacing: 0.22em; white-space: nowrap;
           font-family: var(--font-geist-mono, monospace);
         }
-        .teBgW1 { font-size: 240px; color: rgba(255,255,255,0.017); top: 26%; left: 50%; transform: translate(-50%, -50%); }
-        .teBgW2 { font-size: 140px; color: rgba(255,255,255,0.012); bottom: 6%;  right: -4%; }
-        .teBgW3 { font-size: 110px; color: rgba(255,255,255,0.009); top: 4%;     left: -2%; }
+        .teBgW1 { font-size: 190px; color: rgba(255,255,255,0.011); top: 26%; left: 50%; transform: translate(-50%, -50%); }
+        .teBgW2 { font-size: 120px; color: rgba(255,255,255,0.008); bottom: 6%;  right: -4%; }
+        .teBgW3 { font-size: 90px;  color: rgba(255,255,255,0.007); top: 4%;     left: -2%; }
 
         /* header */
         .teHead { position: relative; z-index: 2; margin-bottom: clamp(24px, 4vh, 52px); }
@@ -765,11 +730,6 @@ export default function TrustEngineSection() {
         .tcBrBL { bottom: -1px; left: -1px;  border-width: 0 0 1.5px 1.5px; }
         .tcBrBR { bottom: -1px; right: -1px; border-width: 0 1.5px 1.5px 0; }
 
-        .tcHdr {
-          font-size: 9.5px; letter-spacing: 0.22em; color: rgba(255,255,255,0.28);
-          text-transform: uppercase; font-family: var(--font-geist-mono, monospace);
-          margin-bottom: 14px;
-        }
 
         .tcVis { width: 100%; aspect-ratio: 1; }
 
@@ -837,21 +797,6 @@ export default function TrustEngineSection() {
           line-height: 1.6;
         }
 
-        .tmMeta {
-          margin-top: 18px; padding: 16px 18px;
-          background: rgba(255,255,255,0.024); border: 1px solid rgba(255,255,255,0.07);
-          display: flex; flex-direction: column; gap: 10px;
-        }
-        .tmMetaRow { display: flex; justify-content: space-between; align-items: center; }
-        .tmMK { font-size: 9.5px; letter-spacing: 0.1em; color: rgba(255,255,255,0.28); text-transform: uppercase; font-family: var(--font-geist-mono, monospace); }
-        .tmMV { font-size: 10px;  letter-spacing: 0.08em; color: rgba(255,255,255,0.72); text-transform: uppercase; font-family: var(--font-geist-mono, monospace); }
-
-        .tmFoot {
-          display: flex; justify-content: space-between; margin-top: 16px;
-          font-size: 9px; letter-spacing: 0.1em; color: rgba(255,255,255,0.18);
-          font-family: var(--font-geist-mono, monospace);
-        }
-
         /* mobile */
         .teMob { display: none; position: relative; z-index: 2; }
 
@@ -891,21 +836,109 @@ export default function TrustEngineSection() {
 
         /* responsive */
         @media (max-width: 1100px) {
-          .te { padding: 80px 48px 88px; }
+          .teInner { padding: 80px 0 88px; }
           .teGrid { grid-template-columns: 1fr 280px 1fr; gap: 24px; }
         }
         @media (max-width: 900px) {
-          .te { padding: 72px 36px 80px; }
+          .teInner { padding: 72px 0 80px; }
           .teGrid { grid-template-columns: 1fr 250px 1fr; gap: 18px; }
         }
         @media (max-width: 768px) {
-          .te     { padding: 64px 22px 72px; height: auto; display: block; justify-content: flex-start; }
+          /* ── Root: auto height, clamp horizontal overflow ─────────────
+             height: 100% on desktop fills the panel; on mobile it must be
+             auto so content determines the height. overflow: hidden clips
+             the absolutely-positioned bg words that extend past the edge. */
+          .te {
+            height: auto;
+          }
+
+          .teInner {
+            width: min(calc(100% - 32px), 1200px);
+            padding: 48px 0 56px;
+            height: auto;
+            justify-content: flex-start;
+          }
+
           .teGrid { display: none; }
-          .teMob  { display: block; }
-          .teHead { margin-bottom: 40px; }
-          .teBgW1 { font-size: 72px; }
-          .teBgW2 { font-size: 52px; }
-          .teBgW3 { font-size: 42px; }
+          .teMob  { display: flex; flex-direction: column; }
+
+          /* ── Bg words: hide completely on mobile ─────────────────────
+             teBgW2 has right: -4% and teBgW3 has left: -2% — even as
+             absolute elements they can trigger horizontal scroll area. */
+          .teBgW { display: none; }
+
+          /* ── Header: tighter vertical spacing ───────────────────────── */
+          .teHead { margin-bottom: 28px; }
+
+          .teH2 {
+            font-size: clamp(24px, 6.5vw, 36px);
+            letter-spacing: 0.04em;
+            margin-bottom: 14px;
+          }
+
+          .teSub {
+            font-size: 14px;
+            line-height: 1.65;
+            margin-bottom: 18px;
+          }
+
+          .teMeta { gap: 8px; }
+
+          /* ── Summary block ───────────────────────────────────────────── */
+          .tmiTop {
+            padding: 16px;
+            margin-bottom: 18px;
+            box-sizing: border-box;
+            overflow-x: hidden;
+          }
+
+          .tmiTopHdr {
+            flex-wrap: wrap;
+            gap: 6px;
+          }
+
+          /* ── Individual cards ────────────────────────────────────────── */
+          .tmiCard {
+            padding: 16px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+            overflow-x: hidden;
+          }
+
+          /* Card header row: allow chip to wrap below if row is too narrow */
+          .tmiCardTop {
+            align-items: flex-start;
+            gap: 8px;
+            margin-bottom: 12px;
+          }
+
+          /* min-width: 0 lets the name shrink so the badge never overflows right */
+          .tmiName {
+            font-size: 14px;
+            min-width: 0;
+          }
+
+          /* Card body */
+          .tmiTxt {
+            font-size: 14px;
+            line-height: 1.65;
+            margin-bottom: 12px;
+          }
+
+          /* Risk Removed / Proof Output rows */
+          .tmiRow2 { padding: 10px 0; }
+
+          .tmiVal2 {
+            font-size: 13px;
+            line-height: 1.6;
+            word-break: break-word;
+          }
+
+          /* Meter row */
+          .tmiMeter {
+            margin-top: 12px;
+            padding-top: 12px;
+          }
         }
 
         /* reduced motion */

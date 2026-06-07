@@ -736,6 +736,8 @@ export default function SelectedWorkVault() {
         <span className="vaultGlow" />
       </div>
 
+      <div className="vaultInner">
+
       {/* Section heading */}
       <div className="vaultHead vaultReveal">
         <span className="vaultEyebrow">
@@ -879,18 +881,25 @@ export default function SelectedWorkVault() {
         </a>
       </div>
 
+      </div>{/* /vaultInner */}
+
       <style jsx>{`
         /* ── Vault container ──────────────────────────────────────── */
         .vault {
           position: relative;
           z-index: 1;
-          width: min(94vw, 1120px);
+          width: 100%;
+          pointer-events: none;
+          overflow-x: clip;
+        }
+
+        .vaultInner {
+          width: min(calc(100% - 40px), 1200px);
+          margin-inline: auto;
           display: flex;
           flex-direction: column;
           gap: clamp(14px, 2.1vh, 28px);
           text-align: left;
-          pointer-events: none;
-          overflow-x: clip;
         }
 
         /* ── Heading ──────────────────────────────────────────────── */
@@ -3193,6 +3202,10 @@ export default function SelectedWorkVault() {
         @media (max-width: 640px) {
           .vault {
             width: 100%;
+          }
+
+          .vaultInner {
+            width: min(calc(100% - 32px), 1200px);
             gap: 12px;
           }
 
