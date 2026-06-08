@@ -1,6 +1,7 @@
 'use client';
 
 import ServicesMegaMenu from './ServicesMegaMenu';
+import WorkMegaMenu from './WorkMegaMenu';
 import MobileNav from './MobileNav';
 
 const CONTACT_EMAIL = 'hello@mogt.studio';
@@ -21,7 +22,7 @@ export default function SiteHeader() {
       </a>
 
       <nav className="shNav">
-        <a href="/#work">Work</a>
+        <WorkMegaMenu />
         <ServicesMegaMenu />
         <a className="shNavCta" href={CONTACT_HREF}>Estimate a Project</a>
       </nav>

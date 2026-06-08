@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion, type Variants } from 'framer-motion';
 import { INDUSTRIES } from '../../../public/megaMenuData';
+import { WORK_CATEGORIES } from '../../../public/workMegaMenuData';
 
 const EASE_OUT = [0.22, 1, 0.36, 1] as const;
 
@@ -13,8 +14,9 @@ type Props = {
 
 export default function MobileNav({ contactHref, workHref = '#work' }: Props) {
   const [open, setOpen] = useState(false);
-  const [view, setView] = useState<'root' | 'industries'>('root');
+  const [view, setView] = useState<'root' | 'work' | 'work-category' | 'industries'>('root');
   const [industry, setIndustry] = useState<number | null>(null);
+  const [workCategory, setWorkCategory] = useState<number | null>(null);
   const [direction, setDirection] = useState(1);
   const prefersReducedMotion = useReducedMotion();
 
@@ -46,10 +48,22 @@ export default function MobileNav({ contactHref, workHref = '#work' }: Props) {
     const timer = window.setTimeout(() => {
       setView('root');
       setIndustry(null);
+      setWorkCategory(null);
       setDirection(1);
     }, 340);
     return () => window.clearTimeout(timer);
   }, [open]);
+
+  const openWork = () => {
+    setDirection(1);
+    setView('work');
+  };
+
+  const openWorkCategory = (index: number) => {
+    setDirection(1);
+    setWorkCategory(index);
+    setView('work-category');
+  };
 
   const openIndustries = () => {
     setDirection(1);
@@ -65,13 +79,20 @@ export default function MobileNav({ contactHref, workHref = '#work' }: Props) {
     setDirection(-1);
     if (industry !== null) {
       setIndustry(null);
+    } else if (view === 'work-category') {
+      setWorkCategory(null);
+      setView('work');
     } else {
       setView('root');
     }
   };
 
-  const screenKey = industry !== null ? `sol-${industry}` : view;
+  const screenKey =
+    industry !== null ? `sol-${industry}` :
+    view === 'work-category' && workCategory !== null ? `wc-${workCategory}` :
+    view;
   const activeIndustry = industry !== null ? INDUSTRIES[industry] : null;
+  const activeWorkCategory = workCategory !== null ? WORK_CATEGORIES[workCategory] : null;
 
   const screenVariants: Variants = prefersReducedMotion
     ? {
@@ -137,16 +158,17 @@ export default function MobileNav({ contactHref, workHref = '#work' }: Props) {
                   exit="exit"
                   transition={{ duration: 0.32, ease: EASE_OUT }}
                 >
-                  {view === 'root' && industry === null && (
+                  {view === 'root' && industry === null && workCategory === null && (
                     <div className="mnList">
                       <span className="mnSectionLabel">NAVIGATION</span>
-                      <a className="mnRow mnRowLink" href={workHref} onClick={close}>
+                      <button type="button" className="mnRow" onClick={openWork}>
                         <span className="mnRowNum">01</span>
                         <span className="mnRowName">Work</span>
-                        <svg className="mnRowArrow" viewBox="0 0 16 12" aria-hidden="true">
+                        <span className="mnRowMeta">{WORK_CATEGORIES.length} CATEGORIES</span>
+                        <svg className="mnRowArrow isStatic" viewBox="0 0 16 12" aria-hidden="true">
                           <path d="M1 6h12M9 1.5 14 6 9 10.5" fill="none" stroke="currentColor" strokeWidth="1.4" />
                         </svg>
-                      </a>
+                      </button>
                       <button type="button" className="mnRow" onClick={openIndustries}>
                         <span className="mnRowNum">02</span>
                         <span className="mnRowName">Services</span>
@@ -159,6 +181,71 @@ export default function MobileNav({ contactHref, workHref = '#work' }: Props) {
                       <a className="mnCta" href={contactHref} onClick={close}>
                         Estimate a Project
                       </a>
+                    </div>
+                  )}
+
+                  {view === 'work' && workCategory === null && (
+                    <div className="mnList">
+                      <button type="button" className="mnBack" onClick={goBack}>
+                        <svg viewBox="0 0 16 12" aria-hidden="true">
+                          <path d="M15 6H3M7 1.5 2 6l5 4.5" fill="none" stroke="currentColor" strokeWidth="1.4" />
+                        </svg>
+                        <span>WORK</span>
+                      </button>
+                      <span className="mnSectionLabel">CATEGORIES / {String(WORK_CATEGORIES.length).padStart(2, '0')}</span>
+                      {WORK_CATEGORIES.map((cat, index) => (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          className="mnRow"
+                          onClick={() => openWorkCategory(index)}
+                        >
+                          <span className="mnRowNum">{String(index + 1).padStart(2, '0')}</span>
+                          <span className="mnRowName">{cat.name}</span>
+                          <span className="mnRowMeta">{cat.projects.length}</span>
+                          <svg className="mnRowArrow isStatic" viewBox="0 0 16 12" aria-hidden="true">
+                            <path d="M1 6h12M9 1.5 14 6 9 10.5" fill="none" stroke="currentColor" strokeWidth="1.4" />
+                          </svg>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {view === 'work-category' && activeWorkCategory && (
+                    <div className="mnList">
+                      <button type="button" className="mnBack" onClick={goBack}>
+                        <svg viewBox="0 0 16 12" aria-hidden="true">
+                          <path d="M15 6H3M7 1.5 2 6l5 4.5" fill="none" stroke="currentColor" strokeWidth="1.4" />
+                        </svg>
+                        <span>CATEGORIES</span>
+                      </button>
+
+                      <div className="mnSolHead">
+                        <span className="mnSectionLabel">WORK / {activeWorkCategory.name.toUpperCase()}</span>
+                        <h3>{activeWorkCategory.name}</h3>
+                        <p>{activeWorkCategory.description}</p>
+                        <span className="mnSolCount">
+                          {String(activeWorkCategory.projects.length).padStart(2, '0')} PROJECTS
+                        </span>
+                      </div>
+
+                      {activeWorkCategory.projects.map((project, index) => (
+                        <a
+                          key={project.slug}
+                          className="mnRow mnRowSol"
+                          href={`/work/${project.slug}`}
+                          onClick={close}
+                        >
+                          <span className="mnRowNum">{String(index + 1).padStart(2, '0')}</span>
+                          <span className="mnSolCopy">
+                            <span className="mnRowName">{project.title}</span>
+                            <span className="mnSolDesc">{project.description}</span>
+                          </span>
+                          <svg className="mnRowArrow" viewBox="0 0 16 12" aria-hidden="true">
+                            <path d="M1 6h12M9 1.5 14 6 9 10.5" fill="none" stroke="currentColor" strokeWidth="1.4" />
+                          </svg>
+                        </a>
+                      ))}
                     </div>
                   )}
 

@@ -13,6 +13,7 @@ import TrustEngineSection from './TrustEngineSection';
 import TestimonialsSection from './TestimonialsSection';
 import ProjectIntakeSection from './ProjectIntakeSection';
 import ServicesMegaMenu from './ServicesMegaMenu';
+import WorkMegaMenu from './WorkMegaMenu';
 import MobileNav from './MobileNav';
 
 const useIsomorphicLayoutEffect =
@@ -1183,25 +1184,44 @@ export default function CoinOrbitHero() {
     createBackgroundGlow();
     createCoins();
 
+    // Tell the loading screen the heavy scene (Three.js + the GLB logo model)
+    // is ready. Idempotent + sets a global flag so the loader still resolves if
+    // it happens to mount after this fires.
+    let readySignalled = false;
+    const signalReady = () => {
+      if (readySignalled) return;
+      readySignalled = true;
+      (window as Window & { __mogtReady?: boolean }).__mogtReady = true;
+      window.dispatchEvent(new Event('mogt:ready'));
+    };
+
     const logoLoader = new GLTFLoader();
     logoLoader.setMeshoptDecoder(MeshoptDecoder);
-    logoLoader.load('/3Dlogo.glb', (gltf) => {
-      systemsLogoModel = gltf.scene;
-      systemsLogoModel.scale.setScalar(isMobileLayout() ? 1.008 : 0.648);
-      systemsLogoModel.position.set(0, 0, -0.2);
-      systemsLogoMaterials = [];
-      systemsLogoModel.traverse((child) => {
-        const mesh = child as THREE.Mesh;
-        if (!mesh.material) return;
-        const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-        mats.forEach((material) => {
-          material.transparent = true;
-          material.opacity = 0;
-          systemsLogoMaterials.push(material);
+    logoLoader.load(
+      '/3Dlogo.glb',
+      (gltf) => {
+        systemsLogoModel = gltf.scene;
+        systemsLogoModel.scale.setScalar(isMobileLayout() ? 1.008 : 0.648);
+        systemsLogoModel.position.set(0, 0, -0.2);
+        systemsLogoMaterials = [];
+        systemsLogoModel.traverse((child) => {
+          const mesh = child as THREE.Mesh;
+          if (!mesh.material) return;
+          const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+          mats.forEach((material) => {
+            material.transparent = true;
+            material.opacity = 0;
+            systemsLogoMaterials.push(material);
+          });
         });
-      });
-      scene.add(systemsLogoModel);
-    });
+        scene.add(systemsLogoModel);
+        // One frame so the model's first render is committed before the curtain lifts.
+        requestAnimationFrame(signalReady);
+      },
+      undefined,
+      // Never trap the user behind the loader if the model fails to load.
+      signalReady,
+    );
 
     renderer.domElement.addEventListener('click', onClick);
     renderer.domElement.addEventListener('pointermove', onPointerMove);
@@ -1653,7 +1673,7 @@ export default function CoinOrbitHero() {
           <span className="soundGlyph" aria-hidden="true" />
         </div>
         <nav className="portfolioNav">
-          <a href="#work">Work</a>
+          <WorkMegaMenu />
           <ServicesMegaMenu />
           <a className="navCta" href={CONTACT_HREF}>Estimate a Project</a>
         </nav>
@@ -1936,7 +1956,7 @@ export default function CoinOrbitHero() {
         .canvasContainer {
           position: absolute;
           inset: 50% auto auto 50%;
-          width: min(100vw, 100vw);
+          width: 100%;
           aspect-ratio: 1 / 1;
           transform: translate(-50%, -50%);
           cursor: pointer;
