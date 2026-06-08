@@ -12,6 +12,32 @@ export default function LoadingScreen() {
   const [render, setRender] = useState(true);
   const [exiting, setExiting] = useState(false);
 
+  // Any back/forward navigation must do a clean, full reload — this heavy
+  // WebGL/GSAP/Lenis page does not survive being resumed from a frozen state,
+  // which leaves the loader (and the 3D scene) stuck mid-init. Two paths cover
+  // every case, and neither can loop:
+  //   1. bfcache restore (swipe-back) — scripts stay frozen, so the only thing
+  //      that runs is a pre-registered `pageshow` listener (persisted=true).
+  //   2. a fresh history-traversal load — scripts run, and the Navigation
+  //      Timing type reports `back_forward`.
+  // After a reload the type becomes `reload` and persisted is false, so a
+  // reloaded page never re-triggers either path.
+  useEffect(() => {
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) window.location.reload();
+    };
+    window.addEventListener('pageshow', onPageShow);
+
+    const navEntry = performance.getEntriesByType('navigation')[0] as
+      | PerformanceNavigationTiming
+      | undefined;
+    if (navEntry?.type === 'back_forward') {
+      window.location.reload();
+    }
+
+    return () => window.removeEventListener('pageshow', onPageShow);
+  }, []);
+
   useEffect(() => {
     const startedAt = performance.now();
     let settled = false;
@@ -31,12 +57,25 @@ export default function LoadingScreen() {
       exitTimer = window.setTimeout(beginExit, remaining);
     };
 
-    if ((window as Window & { __mogtReady?: boolean }).__mogtReady) onReady();
-    window.addEventListener('mogt:ready', onReady);
+    // Routes with the heavy WebGL scene fire `mogt:ready` once it's up; every
+    // other route just waits for the window load event. Either way the minimum
+    // display time lets the assemble animation play and the cap prevents hangs.
+    const needsScene = window.location.pathname === '/';
+
+    if (needsScene) {
+      if ((window as Window & { __mogtReady?: boolean }).__mogtReady) onReady();
+      window.addEventListener('mogt:ready', onReady);
+    } else if (document.readyState === 'complete') {
+      onReady();
+    } else {
+      window.addEventListener('load', onReady, { once: true });
+    }
+
     const cap = window.setTimeout(beginExit, MAX_WAIT_MS); // safety net
 
     return () => {
       window.removeEventListener('mogt:ready', onReady);
+      window.removeEventListener('load', onReady);
       if (exitTimer) window.clearTimeout(exitTimer);
       if (removeTimer) window.clearTimeout(removeTimer);
       window.clearTimeout(cap);

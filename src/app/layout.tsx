@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { GlobalCrtOverlay } from "./components/fx/GlobalCrtOverlay";
 import { SmoothScrollProvider } from "./components/fx/SmoothScrollProvider";
+import LoadingScreen from "./components/LoadingScreen";
 
 const geistSans = Geist({
 	variable: "--font-geist-sans",
@@ -66,6 +67,7 @@ export default function RootLayout({
 					{children}
 				</SmoothScrollProvider>
 				<GlobalCrtOverlay />
+				<LoadingScreen />
 			</body>
 		</html>
 	);
