@@ -259,6 +259,7 @@ function TrustCoreSVG({
           <g key={i}>
             <motion.line
               x1={x} y1={y} x2={cx} y2={cy}
+              initial={{ stroke: 'rgba(255,255,255,0.05)', strokeWidth: 0.5 }}
               animate={{
                 stroke: active ? 'rgba(255,255,255,0.32)' : 'rgba(255,255,255,0.05)',
                 strokeWidth: active ? 1.2 : 0.5,
@@ -277,6 +278,7 @@ function TrustCoreSVG({
             )}
             <motion.circle
               cx={x} cy={y}
+              initial={{ r: 3, fill: 'rgba(255,255,255,0.22)' }}
               animate={{ r: active ? 5.5 : 3, fill: active ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.22)' }}
               transition={{ duration: 0.5, ease: EASE_OUT }}
             />

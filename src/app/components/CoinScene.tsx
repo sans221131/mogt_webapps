@@ -12,6 +12,8 @@ import ProcessBlueprintSection from './ProcessBlueprintSection';
 import TrustEngineSection from './TrustEngineSection';
 import TestimonialsSection from './TestimonialsSection';
 import ProjectIntakeSection from './ProjectIntakeSection';
+import ServicesMegaMenu from './ServicesMegaMenu';
+import MobileNav from './MobileNav';
 
 const useIsomorphicLayoutEffect =
   typeof window !== 'undefined' ? useLayoutEffect : useEffect;
@@ -1652,12 +1654,10 @@ export default function CoinOrbitHero() {
         </div>
         <nav className="portfolioNav">
           <a href="#work">Work</a>
-          <a href="#process">Process</a>
-          <a href="#why-us">Why Us</a>
-          <a href="#proof">Proof</a>
-          <a href={CONTACT_HREF}>Contact</a>
-          <a className="navCta" href={CONTACT_HREF}>Start Project</a>
+          <ServicesMegaMenu />
+          <a className="navCta" href={CONTACT_HREF}>Estimate a Project</a>
         </nav>
+        <MobileNav contactHref={CONTACT_HREF} workHref="#work" />
       </header>
 
       <div ref={heroContentRef} className="heroContent">
