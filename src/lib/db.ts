@@ -1,14 +1,46 @@
 import { neon } from '@neondatabase/serverless';
 
-// Get the database URL from environment variables
-const DATABASE_URL = process.env.DATABASE_URL;
+type NeonClient = ReturnType<typeof neon>;
 
-if (!DATABASE_URL) {
-  throw new Error('DATABASE_URL is not defined in environment variables');
+let cachedSql: NeonClient | null = null;
+
+function getDatabaseUrl() {
+  const databaseUrl =
+    process.env.DATABASE_URL ||
+    process.env.POSTGRES_URL ||
+    process.env.NEON_DATABASE_URL;
+
+  if (!databaseUrl) {
+    throw new Error('DATABASE_URL is not defined in environment variables');
+  }
+
+  return databaseUrl;
 }
 
-// Create Neon client
-const sql = neon(DATABASE_URL);
+export function getSql() {
+  if (!cachedSql) {
+    cachedSql = neon(getDatabaseUrl());
+  }
+
+  return cachedSql;
+}
+
+const sqlTarget = function sqlProxy() {} as unknown as NeonClient;
+
+const sql = new Proxy(
+  sqlTarget,
+  {
+    apply(_target, _thisArg, argumentsList) {
+      const client = getSql() as unknown as (...args: unknown[]) => unknown;
+      return client(...argumentsList);
+    },
+    get(_target, property) {
+      const client = getSql() as unknown as Record<PropertyKey, unknown>;
+      const value = client[property];
+      return typeof value === 'function' ? value.bind(client) : value;
+    },
+  },
+) as NeonClient;
 
 /**
  * Direct query execution using Neon serverless
@@ -20,7 +52,7 @@ export async function query<T = any>(
   params: any[] = []
 ): Promise<T[]> {
   try {
-    const result = await sql.query(queryString, params);
+    const result = await getSql().query(queryString, params);
     // Normalize common return shapes
     if (result && typeof result === 'object' && 'rows' in result) {
       // @ts-ignore
@@ -40,7 +72,7 @@ export async function query<T = any>(
  */
 export async function testConnection(): Promise<{ success: boolean; error?: string; result?: any }> {
   try {
-    const res = await sql.query('SELECT 1 as ok');
+    const res = await getSql().query('SELECT 1 as ok');
     console.log('✅ Database connection successful:', res);
     return { success: true, result: res };
   } catch (error: any) {
