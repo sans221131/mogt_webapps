@@ -13,6 +13,7 @@ import {
 } from 'framer-motion';
 import { WORK_CATEGORIES, type WorkCategory, type WorkProject } from '../../../public/workMegaMenuData';
 import SiteHeader from '../components/SiteHeader';
+import { useProjectIntake } from '../components/project-intake/ProjectIntakeProvider';
 
 const EASE_OUT = [0.22, 1, 0.36, 1] as const;
 const CONTACT_HREF = `mailto:hello@mogt.studio?subject=Project%20Inquiry%20%E2%80%94%20MOGT`;
@@ -80,6 +81,7 @@ function TypeBadge({ type }: { type: string }) {
 }
 
 export default function WorkClient() {
+  const { openIntake } = useProjectIntake();
   const prefersReduced = useReducedMotion();
 
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -374,7 +376,14 @@ export default function WorkClient() {
       <section className="wkCtaBar">
         <span className="wkCtaBarKicker">SEEN ENOUGH?</span>
         <p className="wkCtaBarText">Tell us what you need to build.</p>
-        <a className="wkCtaBarBtn" href={CONTACT_HREF}>
+        <a
+          className="wkCtaBarBtn"
+          href={CONTACT_HREF}
+          onClick={(event) => {
+            event.preventDefault();
+            openIntake({ intent: 'estimate', sourceButton: 'Estimate a Project' });
+          }}
+        >
           Estimate a Project
           <svg viewBox="0 0 14 10" aria-hidden="true">
             <path d="M1 5h11M8 1.5 12.5 5 8 8.5" fill="none" stroke="currentColor" strokeWidth="1.3" />
@@ -898,6 +907,272 @@ export default function WorkClient() {
 
         @media (max-width: 900px) {
           .wkCatGrid, .wkProjGrid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 767px) {
+          .wk {
+            overflow-x: hidden;
+          }
+
+          .wkHero {
+            padding: 34px 13px 28px;
+          }
+
+          .wkHeroFrame {
+            inset: 14px 7px;
+          }
+
+          .wkHeroInner {
+            gap: 14px;
+          }
+
+          .wkHeroTitle {
+            font-size: clamp(30px, 11vw, 42px);
+            line-height: 1.02;
+          }
+
+          .wkLede {
+            max-width: 34ch;
+            font-size: 13px;
+            line-height: 1.45;
+          }
+
+          .wkMetrics {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            width: 100%;
+          }
+
+          .wkMetric {
+            padding: 10px 12px;
+            border-right: 1px solid rgba(255,255,255,0.08);
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+          }
+
+          .wkMetric:nth-child(2n) {
+            border-right: 0;
+          }
+
+          .wkMetric:nth-last-child(-n + 2) {
+            border-bottom: 0;
+          }
+
+          .wkControls {
+            top: 64px;
+            overflow: hidden;
+          }
+
+          .wkControlsInner {
+            max-width: none;
+            width: 100%;
+          }
+
+          .wkSearch {
+            min-height: 42px;
+            padding: 0 13px;
+          }
+
+          .wkSearchIcon {
+            width: 13px;
+            height: 13px;
+          }
+
+          .wkSearch input {
+            min-width: 0;
+            padding: 11px 9px;
+            font-size: 11px;
+            letter-spacing: 0.02em;
+          }
+
+          .wkSearchClear {
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            font-size: 15px;
+          }
+
+          .wkChips {
+            justify-content: flex-start;
+            flex-wrap: nowrap;
+            gap: 7px;
+            width: 100%;
+            max-width: 100%;
+            overflow-x: auto;
+            overflow-y: hidden;
+            overscroll-behavior-x: contain;
+            padding: 8px 13px 9px;
+            scroll-padding-inline: 13px;
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+          }
+
+          .wkChips::-webkit-scrollbar {
+            display: none;
+          }
+
+          .wkChip {
+            height: 30px;
+            padding: 0 10px;
+            font-size: 9px;
+            letter-spacing: 0.06em;
+            white-space: nowrap;
+          }
+
+          .wkMain {
+            padding: 18px 13px 42px;
+          }
+
+          .wkSectionHead {
+            gap: 5px;
+            margin-bottom: 14px;
+          }
+
+          .wkSectionKicker {
+            font-size: 8px;
+            letter-spacing: 0.18em;
+          }
+
+          .wkSectionTitle {
+            font-size: clamp(20px, 6.5vw, 24px);
+            line-height: 1.08;
+          }
+
+          .wkSectionDesc {
+            display: -webkit-box;
+            max-width: 36ch;
+            margin-top: 0;
+            overflow: hidden;
+            font-size: 13px;
+            line-height: 1.42;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+          }
+
+          .wkResultCount {
+            margin-top: 4px;
+            font-size: 8px;
+            letter-spacing: 0.16em;
+          }
+
+          .wkCatGrid,
+          .wkProjGrid {
+            grid-template-columns: 1fr;
+            gap: 10px;
+          }
+
+          .wkCatCard {
+            gap: 8px;
+            min-width: 0;
+            padding: 14px 14px 39px;
+          }
+
+          .wkCatCardHead {
+            gap: 10px;
+          }
+
+          .wkCatNum {
+            font-size: 9px;
+          }
+
+          .wkCatCount {
+            padding: 3px 7px;
+            font-size: 8px;
+          }
+
+          .wkCatName {
+            font-size: clamp(18px, 5.8vw, 23px);
+            line-height: 1.08;
+          }
+
+          .wkCatDesc {
+            font-size: 13px;
+            line-height: 1.42;
+          }
+
+          .wkCatSamples {
+            gap: 5px;
+            margin-top: 2px;
+            overflow: hidden;
+          }
+
+          .wkCatSample,
+          .wkCatSampleMore {
+            max-width: 100%;
+            padding: 4px 7px;
+            overflow: hidden;
+            font-size: 9px;
+            line-height: 1.2;
+            text-overflow: ellipsis;
+          }
+
+          .wkCatOpen {
+            bottom: 13px;
+            left: 14px;
+            opacity: 0.68;
+            transform: none;
+          }
+
+          .wkProjCard {
+            gap: 8px;
+            min-width: 0;
+            padding: 14px 14px 38px;
+          }
+
+          .wkProjLogo {
+            width: 48px;
+            height: 48px;
+          }
+
+          .wkProjLogoMono {
+            font-size: 16px;
+          }
+
+          .wkProjCardHead {
+            gap: 7px;
+          }
+
+          .wkTypeBadge {
+            height: 22px;
+            padding: 0 8px;
+            font-size: 8.5px;
+          }
+
+          .wkProjCat {
+            max-width: 58%;
+            font-size: 8.5px;
+          }
+
+          .wkProjTitle {
+            font-size: clamp(16px, 5vw, 19px);
+            line-height: 1.18;
+          }
+
+          .wkProjDesc {
+            font-size: 13px;
+            line-height: 1.42;
+          }
+
+          .wkProjCta {
+            bottom: 13px;
+            left: 14px;
+            opacity: 0.68;
+            transform: none;
+          }
+
+          .wkEmpty {
+            gap: 10px;
+            padding: 38px 14px;
+          }
+
+          .wkCtaBar {
+            padding: 22px 13px 36px;
+            gap: 10px;
+          }
+
+          .wkCtaBarBtn {
+            width: 100%;
+            justify-content: center;
+          }
         }
 
         @media (prefers-reduced-motion: reduce) {

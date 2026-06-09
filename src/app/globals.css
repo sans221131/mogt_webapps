@@ -225,6 +225,16 @@ body {
 	to { opacity: 1; }
 }
 
+/* On mobile, `inset: 0` anchors to the layout viewport (ICB) which includes
+   the browser chrome. Using 100dvh (dynamic viewport = visible area only)
+   ensures `justify-content: center` targets the actual visible region. */
+@media (max-width: 767px) {
+	.mogtLoader {
+		height: 100vh; /* fallback for browsers without dvh */
+		height: 100dvh;
+	}
+}
+
 @media (prefers-reduced-motion: reduce) {
 	.mogtLogo,
 	.mogtBand,

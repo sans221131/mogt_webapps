@@ -1,5 +1,7 @@
 'use client';
 
+import { useProjectIntake } from './project-intake/ProjectIntakeProvider';
+
 // ── Section F / Project Intake ───────────────────────────────────────────────
 // Final conversion panel styled as a technical intake terminal. Strong CTA,
 // a "what the intake covers" checklist, and the build categories MOGT takes on.
@@ -22,6 +24,8 @@ const INTAKE_STEPS = [
 ];
 
 export default function ProjectIntakeSection({ contactHref }: { contactHref: string }) {
+  const { openIntake } = useProjectIntake();
+
   return (
     <div className="pi">
       {/* full-width background grid */}
@@ -40,10 +44,24 @@ export default function ProjectIntakeSection({ contactHref }: { contactHref: str
             </p>
 
             <div className="piActions">
-              <a className="piBtn piBtnPrimary" href={contactHref}>
+              <a
+                className="piBtn piBtnPrimary"
+                href={contactHref}
+                onClick={(event) => {
+                  event.preventDefault();
+                  openIntake({ intent: 'start_project', sourceButton: 'Start a Project' });
+                }}
+              >
                 Start a Project
               </a>
-              <a className="piBtn piBtnGhost" href={contactHref}>
+              <a
+                className="piBtn piBtnGhost"
+                href={contactHref}
+                onClick={(event) => {
+                  event.preventDefault();
+                  openIntake({ intent: 'project_brief', sourceButton: 'Send Project Brief' });
+                }}
+              >
                 Send Project Brief
               </a>
             </div>
@@ -378,28 +396,140 @@ export default function ProjectIntakeSection({ contactHref }: { contactHref: str
         @media (max-width: 768px) {
           .pi {
             height: auto;
+            overflow-x: hidden;
           }
           .piInner {
-            width: min(calc(100% - 32px), 1200px);
+            width: min(calc(100% - 26px), 620px);
             height: auto;
             justify-content: flex-start;
-            padding: 48px 0 56px;
-            gap: 28px;
+            padding: 38px 0 30px;
+            gap: 14px;
           }
           .piBgWord {
             display: none;
           }
+          .piMain {
+            gap: 16px;
+          }
+          .piLabel {
+            font-size: 8.5px;
+            letter-spacing: 0.14em;
+          }
+          .piH2 {
+            max-width: 15ch;
+            margin-top: 9px;
+            font-size: clamp(21px, 6.6vw, 27px);
+            line-height: 1.02;
+            letter-spacing: 0;
+          }
+          .piSub {
+            display: -webkit-box;
+            max-width: 36ch;
+            margin-top: 10px;
+            overflow: hidden;
+            font-size: 11.5px;
+            line-height: 1.42;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 3;
+          }
           .piActions {
-            margin-top: 24px;
+            flex-direction: column;
+            flex-wrap: nowrap;
+            gap: 8px;
+            margin-top: 14px;
           }
           .piBtn {
-            flex: 1 1 auto;
+            width: 100%;
+            height: 44px;
+            flex: none;
             min-width: 0;
+            padding: 0 16px;
+            font-size: 11px;
+            letter-spacing: 0.06em;
+          }
+          .piNote {
+            margin-top: 9px;
+            font-size: 8px;
+            line-height: 1.35;
+            letter-spacing: 0.08em;
+          }
+          .piTerminal {
+            border-color: rgba(255, 255, 255, 0.12);
+          }
+          .piTermBar {
+            gap: 8px;
+            padding: 8px 10px;
+          }
+          .piTermDot {
+            width: 6px;
+            height: 6px;
+          }
+          .piTermTitle {
+            font-size: 8.5px;
+            letter-spacing: 0.12em;
+          }
+          .piTermStatus {
+            padding: 2px 6px;
+            font-size: 8px;
+            letter-spacing: 0.1em;
+          }
+          .piTermBody {
+            padding: 10px 11px 11px;
+          }
+          .piTermLine {
+            font-size: 10.5px;
+            line-height: 1.45;
+          }
+          .piTermMuted {
+            display: none;
+          }
+          .piChecklist {
+            gap: 6px;
+            margin: 8px 0 7px;
+          }
+          .piChecklist li {
+            gap: 8px;
+            font-size: 11px;
+            line-height: 1.25;
+          }
+          .piChecklist i {
+            font-size: 9.5px;
+          }
+          .piTermCursor {
+            margin-top: 4px;
+            font-size: 10px;
           }
           .piServices {
             flex-direction: column;
             align-items: flex-start;
-            gap: 14px;
+            gap: 8px;
+            padding-top: 10px;
+            overflow: hidden;
+          }
+          .piServicesLbl {
+            font-size: 8px;
+            letter-spacing: 0.14em;
+          }
+          .piChips {
+            width: 100%;
+            max-width: 100%;
+            flex-wrap: nowrap;
+            gap: 7px;
+            overflow-x: auto;
+            overscroll-behavior-x: contain;
+            padding: 1px 1px 8px;
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+          }
+          .piChips::-webkit-scrollbar {
+            display: none;
+          }
+          .piChip {
+            flex: 0 0 auto;
+            padding: 6px 10px;
+            font-size: 9px;
+            letter-spacing: 0.04em;
+            white-space: nowrap;
           }
         }
 

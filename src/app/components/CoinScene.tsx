@@ -15,6 +15,7 @@ import ProjectIntakeSection from './ProjectIntakeSection';
 import ServicesMegaMenu from './ServicesMegaMenu';
 import WorkMegaMenu from './WorkMegaMenu';
 import MobileNav from './MobileNav';
+import { useProjectIntake } from './project-intake/ProjectIntakeProvider';
 
 const useIsomorphicLayoutEffect =
   typeof window !== 'undefined' ? useLayoutEffect : useEffect;
@@ -355,6 +356,7 @@ const CONTACT_EMAIL = 'hello@mogt.studio';
 const CONTACT_HREF = `mailto:${CONTACT_EMAIL}?subject=Project%20Inquiry%20%E2%80%94%20MOGT`;
 
 export default function CoinOrbitHero() {
+  const { openIntake } = useProjectIntake();
   const canvasContainerRef = useRef<HTMLDivElement | null>(null);
   const sectionRef = useRef<HTMLElement | null>(null);
   const heroContentRef = useRef<HTMLDivElement | null>(null);
@@ -1675,7 +1677,16 @@ export default function CoinOrbitHero() {
         <nav className="portfolioNav">
           <WorkMegaMenu />
           <ServicesMegaMenu />
-          <a className="navCta" href={CONTACT_HREF}>Estimate a Project</a>
+          <a
+            className="navCta"
+            href={CONTACT_HREF}
+            onClick={(event) => {
+              event.preventDefault();
+              openIntake({ intent: 'estimate', sourceButton: 'Estimate a Project' });
+            }}
+          >
+            Estimate a Project
+          </a>
         </nav>
         <MobileNav contactHref={CONTACT_HREF} workHref="#work" />
       </header>
@@ -1703,7 +1714,14 @@ export default function CoinOrbitHero() {
         </p>
 
         <div ref={ctaRef} className="heroActions">
-          <a className="telegramButton" href={CONTACT_HREF}>
+          <a
+            className="telegramButton"
+            href={CONTACT_HREF}
+            onClick={(event) => {
+              event.preventDefault();
+              openIntake({ intent: 'start_project', sourceButton: 'Start a Project' });
+            }}
+          >
             Start a Project
           </a>
           <a className="secondaryButton" href="#work">
@@ -1745,7 +1763,14 @@ export default function CoinOrbitHero() {
           </p>
 
           <div ref={specializationActionsRef} className="specializationActions">
-            <a className="telegramButton" href={CONTACT_HREF}>
+            <a
+              className="telegramButton"
+              href={CONTACT_HREF}
+              onClick={(event) => {
+                event.preventDefault();
+                openIntake({ intent: 'start_project', sourceButton: 'Start a Project' });
+              }}
+            >
               Start a Project
             </a>
             <a className="secondaryButton" href="#work">

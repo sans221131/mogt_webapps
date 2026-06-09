@@ -4,6 +4,7 @@ import "./globals.css";
 import { GlobalCrtOverlay } from "./components/fx/GlobalCrtOverlay";
 import { SmoothScrollProvider } from "./components/fx/SmoothScrollProvider";
 import LoadingScreen from "./components/LoadingScreen";
+import ProjectIntakeProvider from "./components/project-intake/ProjectIntakeProvider";
 
 const geistSans = Geist({
 	variable: "--font-geist-sans",
@@ -63,9 +64,11 @@ export default function RootLayout({
 				<link rel="icon" href="/favicon.svg" type="image/svg+xml"></link>
 			</head>
 			<body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-				<SmoothScrollProvider>
-					{children}
-				</SmoothScrollProvider>
+				<ProjectIntakeProvider>
+					<SmoothScrollProvider>
+						{children}
+					</SmoothScrollProvider>
+				</ProjectIntakeProvider>
 				<GlobalCrtOverlay />
 				<LoadingScreen />
 			</body>

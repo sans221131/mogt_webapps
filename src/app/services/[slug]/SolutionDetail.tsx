@@ -3,6 +3,7 @@
 import { motion, useReducedMotion, type Variants } from 'framer-motion';
 import SiteHeader from '../../components/SiteHeader';
 import type { Complexity, SolutionPreview } from '../../components/servicesMeta';
+import { useProjectIntake } from '../../components/project-intake/ProjectIntakeProvider';
 
 const EASE_OUT = [0.22, 1, 0.36, 1] as const;
 const CONTACT_EMAIL = 'hello@mogt.studio';
@@ -60,6 +61,7 @@ const stagger: Variants = {
 };
 
 export default function SolutionDetail(props: DetailProps) {
+  const { openIntake } = useProjectIntake();
   const {
     title, description, industryName, industryId, industryDescription,
     industrySolutionCount, indexInIndustry, meta, related,
@@ -110,7 +112,14 @@ export default function SolutionDetail(props: DetailProps) {
           </motion.div>
 
           <motion.div className="sdHeroCta" variants={fadeUp}>
-            <a className="sdBtnPrimary" href={CONTACT_HREF}>
+            <a
+              className="sdBtnPrimary"
+              href={CONTACT_HREF}
+              onClick={(event) => {
+                event.preventDefault();
+                openIntake({ intent: 'estimate', sourceButton: 'Estimate this build' });
+              }}
+            >
               Estimate this build
               <svg viewBox="0 0 14 10" aria-hidden="true"><path d="M1 5h11M8 1.5 12.5 5 8 8.5" fill="none" stroke="currentColor" strokeWidth="1.3" /></svg>
             </a>
@@ -234,7 +243,14 @@ export default function SolutionDetail(props: DetailProps) {
         <h2 className="sdCtaTitle">Ready to scope {title}?</h2>
         <p className="sdCtaDesc">{industryDescription}. Tell us what you&rsquo;re building and we&rsquo;ll scope it from first principles — no templates.</p>
         <div className="sdCtaActions">
-          <a className="sdBtnPrimary" href={CONTACT_HREF}>
+          <a
+            className="sdBtnPrimary"
+            href={CONTACT_HREF}
+            onClick={(event) => {
+              event.preventDefault();
+              openIntake({ intent: 'estimate', sourceButton: 'Estimate a Project' });
+            }}
+          >
             Estimate a Project
             <svg viewBox="0 0 14 10" aria-hidden="true"><path d="M1 5h11M8 1.5 12.5 5 8 8.5" fill="none" stroke="currentColor" strokeWidth="1.3" /></svg>
           </a>

@@ -199,26 +199,29 @@ export default function TestimonialsSection() {
 
               <div className="proofRecordList" aria-label="Client proof records">
                 <span className="proofListLabel">RECORD LIST</span>
-                {TESTIMONIALS.map((testimonial, index) => {
-                  const isActive = index === activeIndex;
+                <div className="proofRecordTrack">
+                  {TESTIMONIALS.map((testimonial, index) => {
+                    const isActive = index === activeIndex;
 
-                  return (
-                    <button
-                      key={testimonial.id}
-                      type="button"
-                      className={`proofRecordButton${isActive ? ' isActive' : ''}`}
-                      aria-pressed={isActive}
-                      onClick={() => setActiveIndex(index)}
-                      onPointerEnter={(event) => {
-                        if (event.pointerType === 'mouse') setActiveIndex(index);
-                      }}
-                    >
-                      <span>{testimonial.id.replace('REC-', '')}</span>
-                      <strong>{testimonial.company}</strong>
-                      <em>{testimonial.category}</em>
-                    </button>
-                  );
-                })}
+                    return (
+                      <button
+                        key={testimonial.id}
+                        type="button"
+                        className={`proofRecordButton${isActive ? ' isActive' : ''}`}
+                        aria-pressed={isActive}
+                        onClick={() => setActiveIndex(index)}
+                        onPointerEnter={(event) => {
+                          if (event.pointerType === 'mouse') setActiveIndex(index);
+                        }}
+                      >
+                        <span>{testimonial.id.replace('REC-', '')}</span>
+                        <strong>{testimonial.company}</strong>
+                        <em>{testimonial.category}</em>
+                        <b className="proofRecordBadge">{testimonial.badge}</b>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </motion.aside>
 
@@ -275,6 +278,11 @@ export default function TestimonialsSection() {
                       <span>{active.role}</span>
                     </div>
                     <p>{active.company}</p>
+                  </div>
+
+                  <div className="proofMobileResult">
+                    <span>RESULT</span>
+                    <p>{active.after}</p>
                   </div>
 
                   <div className="proofProject">
@@ -637,7 +645,15 @@ export default function TestimonialsSection() {
           margin-bottom: 2px;
         }
 
+        .proofRecordTrack {
+          min-width: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+
         .proofRecordButton {
+          position: relative;
           width: 100%;
           min-height: 35px;
           display: grid;
@@ -656,6 +672,7 @@ export default function TestimonialsSection() {
             background 180ms ease,
             color 180ms ease,
             transform 180ms ease;
+          overflow: hidden;
         }
 
         .proofRecordButton:hover,
@@ -690,6 +707,10 @@ export default function TestimonialsSection() {
           text-overflow: ellipsis;
           text-transform: uppercase;
           white-space: nowrap;
+        }
+
+        .proofRecordBadge {
+          display: none;
         }
 
         .proofConnector {
@@ -801,6 +822,7 @@ export default function TestimonialsSection() {
         .proofRecordTop,
         .proofQuote,
         .proofClient,
+        .proofMobileResult,
         .proofProject,
         .proofBeforeAfter,
         .proofSignals {
@@ -885,6 +907,10 @@ export default function TestimonialsSection() {
           display: flex;
           align-items: baseline;
           gap: 14px;
+        }
+
+        .proofMobileResult {
+          display: none;
         }
 
         .proofProject p {
@@ -1085,13 +1111,15 @@ export default function TestimonialsSection() {
           }
 
           .proofRecordList {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            display: flex;
+            flex-direction: column;
             gap: 8px;
           }
 
-          .proofListLabel {
-            grid-column: 1 / -1;
+          .proofRecordTrack {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
           }
 
           .proofRecordButton {
@@ -1216,10 +1244,379 @@ export default function TestimonialsSection() {
           }
         }
 
+        @media (max-width: 767px) {
+          .testimonialsInner {
+            width: min(calc(100% - 24px), 620px);
+            gap: 10px;
+            justify-content: center;
+            padding-top: 28px;
+            padding-bottom: 28px;
+          }
+
+          .proofShell {
+            border-color: rgba(255, 255, 255, 0.16);
+          }
+
+          .testimonialsHeader {
+            padding: 12px 12px 11px;
+          }
+
+          .testimonialsLabel,
+          .archiveStatus span,
+          .proofPanelTop span,
+          .proofListLabel,
+          .proofRecordTop span,
+          .proofProject span,
+          .proofBeforeAfter span {
+            font-size: 8px;
+            line-height: 1.2;
+          }
+
+          .testimonialsTitle {
+            max-width: 15ch;
+            margin-top: 7px;
+            font-size: clamp(20px, 6.2vw, 26px);
+            line-height: 1.02;
+            text-wrap: balance;
+          }
+
+          .testimonialsSubtitle {
+            display: -webkit-box;
+            max-width: 36ch;
+            margin-top: 6px;
+            overflow: hidden;
+            font-size: 11px;
+            line-height: 1.35;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+          }
+
+          .archiveStatus {
+            margin-top: 10px;
+            gap: 8px;
+            padding: 7px 9px;
+          }
+
+          .archiveStatus b,
+          .proofPanelTop b,
+          .proofRecordTop b {
+            font-size: 8px;
+            line-height: 1.2;
+          }
+
+          .archiveScanLine {
+            left: 12px;
+            right: 12px;
+          }
+
+          .proofConsole {
+            display: flex;
+            flex-direction: column;
+          }
+
+          .proofWorkspace {
+            order: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: visible;
+          }
+
+          .proofIndex {
+            order: 2;
+            display: grid;
+            grid-template-rows: auto auto;
+            gap: 8px;
+            padding: 9px 11px 11px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 0;
+            overflow: visible;
+          }
+
+          .proofIndex > .proofPanelTop {
+            display: none;
+          }
+
+          .proofPanelTop {
+            gap: 8px;
+          }
+
+          .proofMetrics {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 6px;
+          }
+
+          .proofMetric {
+            min-height: 0;
+            padding: 4px 6px 5px;
+            background:
+              linear-gradient(180deg, rgba(255, 255, 255, 0.032), rgba(255, 255, 255, 0.006)),
+              rgba(0, 0, 0, 0.14);
+          }
+
+          .proofMetric dt {
+            font-size: clamp(14px, 4.3vw, 18px);
+            line-height: 1;
+          }
+
+          .proofMetric dd {
+            margin-top: 2px;
+            font-size: 7px;
+            line-height: 1.2;
+          }
+
+          .proofRecordList {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+            min-width: 0;
+          }
+
+          .proofListLabel {
+            margin-bottom: 0;
+          }
+
+          .proofRecordTrack {
+            display: flex;
+            flex-direction: row;
+            gap: 8px;
+            max-width: 100%;
+            overflow-x: auto;
+            overscroll-behavior-x: contain;
+            padding: 1px 1px 8px;
+            scroll-padding-inline: 1px;
+            scroll-snap-type: x proximity;
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+          }
+
+          .proofRecordTrack::-webkit-scrollbar {
+            display: none;
+          }
+
+          .proofRecordButton {
+            flex: 0 0 clamp(142px, 43vw, 188px);
+            min-height: 58px;
+            grid-template-columns: auto minmax(0, 1fr);
+            grid-template-areas:
+              "num badge"
+              "name name"
+              "cat cat";
+            gap: 5px 8px;
+            padding: 8px 9px;
+            scroll-snap-align: start;
+          }
+
+          .proofRecordButton span {
+            grid-area: num;
+            font-size: 8px;
+          }
+
+          .proofRecordButton strong {
+            grid-area: name;
+            font-size: 10px;
+            letter-spacing: 0;
+          }
+
+          .proofRecordButton em {
+            grid-area: cat;
+            font-size: 8px;
+          }
+
+          .proofRecordBadge {
+            grid-area: badge;
+            justify-self: end;
+            display: inline-flex;
+            align-items: center;
+            max-width: 76px;
+            overflow: hidden;
+            color: rgba(255, 255, 255, 0.42);
+            font-size: 7px;
+            font-weight: 800;
+            line-height: 1;
+            text-overflow: ellipsis;
+            text-transform: uppercase;
+            white-space: nowrap;
+          }
+
+          .proofRecordButton.isActive::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background: linear-gradient(100deg, transparent 0 30%, rgba(255, 255, 255, 0.12) 50%, transparent 70% 100%);
+            transform: translateX(100%);
+            animation: proofSelectorSweep 900ms ease-out;
+          }
+
+          .proofRecordButton.isActive {
+            box-shadow:
+              inset 2px 0 0 rgba(255, 255, 255, 0.78),
+              0 0 22px rgba(255, 255, 255, 0.055);
+          }
+
+          .proofRecord {
+            display: grid;
+            grid-template-areas:
+              "top"
+              "client"
+              "quote"
+              "result";
+            gap: 9px;
+            padding: 12px;
+          }
+
+          .proofRecordTop {
+            grid-area: top;
+            gap: 6px;
+          }
+
+          .proofRecordTop span,
+          .proofRecordTop b {
+            min-height: 22px;
+            padding: 0 7px;
+          }
+
+          .proofRecordTop b {
+            margin-left: auto;
+            gap: 5px;
+          }
+
+          .proofRecordTop b::before {
+            content: '';
+            width: 5px;
+            height: 5px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.82);
+          }
+
+          .proofQuote {
+            grid-area: quote;
+            display: -webkit-box;
+            max-width: none;
+            margin: 0;
+            overflow: hidden;
+            font-size: 13.5px;
+            line-height: 1.36;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 3;
+          }
+
+          .proofClient {
+            grid-area: client;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: end;
+            gap: 8px;
+            margin-top: 0;
+            padding-top: 9px;
+          }
+
+          .proofClient div {
+            gap: 5px;
+          }
+
+          .proofClient strong {
+            font-size: 11px;
+            line-height: 1.1;
+          }
+
+          .proofClient span,
+          .proofClient p,
+          .proofProject p,
+          .proofBeforeAfter p {
+            font-size: 10.5px;
+            line-height: 1.34;
+          }
+
+          .proofClient p {
+            margin-top: 0;
+            text-align: right;
+          }
+
+          .proofMobileResult {
+            grid-area: result;
+            display: grid;
+            grid-template-columns: 54px minmax(0, 1fr);
+            align-items: baseline;
+            gap: 8px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+          }
+
+          .proofMobileResult span {
+            color: rgba(255, 255, 255, 0.46);
+            font-size: 8px;
+            font-weight: 800;
+            line-height: 1.2;
+            text-transform: uppercase;
+          }
+
+          .proofMobileResult p {
+            margin: 0;
+            color: rgba(255, 255, 255, 0.72);
+            font-family: var(--font-geist-sans, sans-serif);
+            font-size: 10.5px;
+            line-height: 1.34;
+          }
+
+          .proofProject,
+          .proofBeforeAfter,
+          .proofSignals {
+            display: none;
+          }
+
+          .proofProject {
+            margin-top: 0;
+          }
+
+          .proofBeforeAfter div {
+            display: grid;
+            grid-template-columns: 54px minmax(0, 1fr);
+            gap: 8px;
+            align-items: baseline;
+            padding: 7px 8px;
+          }
+
+          .proofBeforeAfter b {
+            display: none;
+          }
+
+          .proofBeforeAfter p {
+            margin-top: 0;
+          }
+
+          .proofSignals {
+            padding: 10px 12px 11px;
+          }
+
+          .proofOutcomeGrid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 6px;
+            margin-top: 7px;
+          }
+
+          .proofOutcome {
+            min-height: 32px;
+            padding: 0 8px;
+            font-size: 8px;
+            line-height: 1.22;
+          }
+        }
+
+        @keyframes proofSelectorSweep {
+          from {
+            transform: translateX(-100%);
+          }
+          to {
+            transform: translateX(100%);
+          }
+        }
+
         @media (prefers-reduced-motion: reduce) {
           .testimonials,
           .testimonials *,
-          .proofShell::after {
+          .proofShell::after,
+          .proofRecordButton.isActive::after {
             animation: none !important;
             transition: none !important;
           }

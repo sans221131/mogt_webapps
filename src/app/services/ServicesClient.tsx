@@ -13,6 +13,7 @@ import {
 import { INDUSTRIES, type Industry, type Solution } from '../../../public/megaMenuData';
 import { getSolutionPreview, type Complexity } from '../components/servicesMeta';
 import SiteHeader from '../components/SiteHeader';
+import { useProjectIntake } from '../components/project-intake/ProjectIntakeProvider';
 
 const EASE_OUT = [0.22, 1, 0.36, 1] as const;
 const CONTACT_EMAIL = 'hello@mogt.studio';
@@ -55,6 +56,7 @@ const cardV: Variants = {
 };
 
 export default function ServicesClient() {
+  const { openIntake } = useProjectIntake();
   const prefersReduced = useReducedMotion();
 
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -338,7 +340,14 @@ export default function ServicesClient() {
           and we’ll scope it from first principles.
         </p>
         <div className="svcCtaActions">
-          <a className="svcCtaPrimary" href={CONTACT_HREF}>
+          <a
+            className="svcCtaPrimary"
+            href={CONTACT_HREF}
+            onClick={(event) => {
+              event.preventDefault();
+              openIntake({ intent: 'estimate', sourceButton: 'Estimate a Project' });
+            }}
+          >
             Estimate a Project
             <svg viewBox="0 0 14 10" aria-hidden="true">
               <path d="M1 5h11M8 1.5 12.5 5 8 8.5" fill="none" stroke="currentColor" strokeWidth="1.3" />

@@ -2,8 +2,10 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion, type Variants } from 'framer-motion';
+import Link from 'next/link';
 import { INDUSTRIES } from '../../../public/megaMenuData';
 import { WORK_CATEGORIES } from '../../../public/workMegaMenuData';
+import { useProjectIntake } from './project-intake/ProjectIntakeProvider';
 
 const EASE_OUT = [0.22, 1, 0.36, 1] as const;
 
@@ -19,6 +21,7 @@ export default function MobileNav({ contactHref, workHref = '#work' }: Props) {
   const [workCategory, setWorkCategory] = useState<number | null>(null);
   const [direction, setDirection] = useState(1);
   const prefersReducedMotion = useReducedMotion();
+  const { openIntake } = useProjectIntake();
 
   const close = useCallback(() => setOpen(false), []);
 
@@ -178,7 +181,15 @@ export default function MobileNav({ contactHref, workHref = '#work' }: Props) {
                         </svg>
                       </button>
 
-                      <a className="mnCta" href={contactHref} onClick={close}>
+                      <a
+                        className="mnCta"
+                        href={contactHref}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          openIntake({ intent: 'estimate', sourceButton: 'Estimate a Project' });
+                          close();
+                        }}
+                      >
                         Estimate a Project
                       </a>
                     </div>
@@ -186,12 +197,20 @@ export default function MobileNav({ contactHref, workHref = '#work' }: Props) {
 
                   {view === 'work' && workCategory === null && (
                     <div className="mnList">
-                      <button type="button" className="mnBack" onClick={goBack}>
-                        <svg viewBox="0 0 16 12" aria-hidden="true">
-                          <path d="M15 6H3M7 1.5 2 6l5 4.5" fill="none" stroke="currentColor" strokeWidth="1.4" />
-                        </svg>
-                        <span>WORK</span>
-                      </button>
+                      <div className="mnPanelHead">
+                        <button type="button" className="mnBack" onClick={goBack}>
+                          <svg viewBox="0 0 16 12" aria-hidden="true">
+                            <path d="M15 6H3M7 1.5 2 6l5 4.5" fill="none" stroke="currentColor" strokeWidth="1.4" />
+                          </svg>
+                          <span>WORK</span>
+                        </button>
+                        <Link className="mnViewAll" href="/work" onClick={close}>
+                          View All Work
+                          <svg className="mnViewAllArrow" viewBox="0 0 16 12" aria-hidden="true">
+                            <path d="M1 6h12M9 1.5 14 6 9 10.5" fill="none" stroke="currentColor" strokeWidth="1.4" />
+                          </svg>
+                        </Link>
+                      </div>
                       <span className="mnSectionLabel">CATEGORIES / {String(WORK_CATEGORIES.length).padStart(2, '0')}</span>
                       {WORK_CATEGORIES.map((cat, index) => (
                         <button
@@ -251,12 +270,20 @@ export default function MobileNav({ contactHref, workHref = '#work' }: Props) {
 
                   {view === 'industries' && industry === null && (
                     <div className="mnList">
-                      <button type="button" className="mnBack" onClick={goBack}>
-                        <svg viewBox="0 0 16 12" aria-hidden="true">
-                          <path d="M15 6H3M7 1.5 2 6l5 4.5" fill="none" stroke="currentColor" strokeWidth="1.4" />
-                        </svg>
-                        <span>SERVICES</span>
-                      </button>
+                      <div className="mnPanelHead">
+                        <button type="button" className="mnBack" onClick={goBack}>
+                          <svg viewBox="0 0 16 12" aria-hidden="true">
+                            <path d="M15 6H3M7 1.5 2 6l5 4.5" fill="none" stroke="currentColor" strokeWidth="1.4" />
+                          </svg>
+                          <span>SERVICES</span>
+                        </button>
+                        <Link className="mnViewAll" href="/services" onClick={close}>
+                          View All Services
+                          <svg className="mnViewAllArrow" viewBox="0 0 16 12" aria-hidden="true">
+                            <path d="M1 6h12M9 1.5 14 6 9 10.5" fill="none" stroke="currentColor" strokeWidth="1.4" />
+                          </svg>
+                        </Link>
+                      </div>
                       <span className="mnSectionLabel">INDUSTRIES / {String(INDUSTRIES.length).padStart(2, '0')}</span>
                       {INDUSTRIES.map((item, index) => (
                         <button
@@ -480,6 +507,15 @@ export default function MobileNav({ contactHref, workHref = '#work' }: Props) {
           text-transform: uppercase;
         }
 
+        .mnPanelHead {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+          flex-wrap: wrap;
+          margin-bottom: 4px;
+        }
+
         .mnBack {
           display: inline-flex;
           align-items: center;
@@ -497,6 +533,9 @@ export default function MobileNav({ contactHref, workHref = '#work' }: Props) {
           cursor: pointer;
           transition: border-color 160ms ease, color 160ms ease;
         }
+        .mnPanelHead .mnBack {
+          margin-bottom: 0;
+        }
         .mnBack:hover,
         .mnBack:focus-visible {
           border-color: rgba(255, 255, 255, 0.36);
@@ -504,6 +543,42 @@ export default function MobileNav({ contactHref, workHref = '#work' }: Props) {
           outline: none;
         }
         .mnBack svg { width: 14px; height: 11px; }
+
+        .mnViewAll {
+          min-height: 30px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 7px;
+          padding: 0 10px;
+          border: 1px solid rgba(255, 255, 255, 0.14);
+          background: rgba(255, 255, 255, 0.018);
+          color: rgba(255, 255, 255, 0.64);
+          font-size: 10px;
+          font-weight: 800;
+          letter-spacing: 0.1em;
+          line-height: 1;
+          text-decoration: none;
+          text-transform: uppercase;
+          white-space: nowrap;
+          transition: border-color 160ms ease, color 160ms ease, background 160ms ease;
+          -webkit-tap-highlight-color: transparent;
+        }
+
+        .mnViewAll:hover,
+        .mnViewAll:focus-visible {
+          border-color: rgba(255, 255, 255, 0.36);
+          background: rgba(255, 255, 255, 0.05);
+          color: rgba(255, 255, 255, 0.96);
+          outline: none;
+        }
+
+        .mnViewAllArrow {
+          width: 14px;
+          height: 11px;
+          flex: none;
+          color: currentColor;
+        }
 
         .mnRow {
           position: relative;
@@ -677,6 +752,7 @@ export default function MobileNav({ contactHref, workHref = '#work' }: Props) {
         @media (prefers-reduced-motion: reduce) {
           .mnBtnBox i,
           .mnRow,
+          .mnViewAll,
           .mnRow::before { transition: none !important; }
         }
       `}</style>

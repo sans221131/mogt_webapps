@@ -3,6 +3,7 @@
 import { motion, useReducedMotion, type Variants } from 'framer-motion';
 import SiteHeader from '../../components/SiteHeader';
 import type { Project } from '../../../../public/portfolio';
+import { useProjectIntake } from '../../components/project-intake/ProjectIntakeProvider';
 
 const EASE_OUT = [0.22, 1, 0.36, 1] as const;
 const CONTACT_HREF = `mailto:hello@mogt.studio?subject=Project%20Inquiry%20%E2%80%94%20MOGT`;
@@ -56,6 +57,7 @@ function typeLabel(t: string): string {
 }
 
 export default function WorkDetail({ project, slug, categoryName, categoryId, related }: Props) {
+  const { openIntake } = useProjectIntake();
   const prefersReduced = useReducedMotion();
 
   const liveLinks = project.liveLink ? parseLiveLinks(project.liveLink) : [];
@@ -292,7 +294,15 @@ export default function WorkDetail({ project, slug, categoryName, categoryId, re
           <motion.p className="wdCtaSub" variants={fadeUp}>
             We design and engineer production-grade platforms. Tell us what you need.
           </motion.p>
-          <motion.a className="wdCtaBtn" href={CONTACT_HREF} variants={fadeUp}>
+          <motion.a
+            className="wdCtaBtn"
+            href={CONTACT_HREF}
+            variants={fadeUp}
+            onClick={(event) => {
+              event.preventDefault();
+              openIntake({ intent: 'estimate', sourceButton: 'Estimate a Project' });
+            }}
+          >
             Estimate a Project
             <svg viewBox="0 0 14 10" aria-hidden="true">
               <path d="M1 5h11M8 1.5 12.5 5 8 8.5" fill="none" stroke="currentColor" strokeWidth="1.3" />

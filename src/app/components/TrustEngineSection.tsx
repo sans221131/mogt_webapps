@@ -837,6 +837,243 @@ export default function TrustEngineSection() {
           .tmHdr { margin-bottom: 12px; padding-bottom: 11px; }
         }
 
+        /* Compact mobile signal deck. Desktop/tablet layout above remains unchanged. */
+        @media (max-width: 767px) {
+          .teInner {
+            width: min(calc(100% - 26px), 620px);
+            padding-top: 58px;
+            padding-bottom: 22px;
+            gap: 12px;
+          }
+
+          .teHead {
+            display: grid;
+            gap: 8px;
+          }
+
+          .teLabel {
+            margin-bottom: 0;
+            font-size: 9px;
+            letter-spacing: 0.2em;
+          }
+
+          .teHeadRow {
+            gap: 9px;
+          }
+
+          .teH2 {
+            font-size: clamp(20px, 7vw, 30px);
+            line-height: 1;
+            letter-spacing: 0.02em;
+          }
+
+          .teSub {
+            margin-top: 0;
+            max-width: 34ch;
+            font-size: 12px;
+            line-height: 1.45;
+          }
+
+          .teMeta {
+            gap: 6px;
+          }
+
+          .teMetaChip {
+            padding: 4px 7px;
+            font-size: 7.5px;
+            letter-spacing: 0.09em;
+          }
+
+          .teBody {
+            gap: 10px;
+          }
+
+          .teDetail {
+            padding: 12px;
+            background:
+              linear-gradient(180deg, rgba(255,255,255,0.022), rgba(255,255,255,0.004)),
+              rgba(5,5,5,0.64);
+          }
+
+          .tmHdr {
+            margin-bottom: 10px;
+            padding-bottom: 9px;
+          }
+
+          .tmHdrTxt,
+          .tmLive {
+            font-size: 8px;
+            letter-spacing: 0.13em;
+          }
+
+          .tmDot {
+            width: 5px;
+            height: 5px;
+          }
+
+          .tmBodyInner {
+            display: grid;
+            gap: 8px;
+          }
+
+          .tmRow {
+            gap: 4px;
+          }
+
+          .tmRowHead {
+            display: grid;
+            gap: 5px;
+            padding-bottom: 2px;
+          }
+
+          .tmRow:not(.tmRowHead) {
+            display: grid;
+            grid-template-columns: minmax(82px, 0.36fr) minmax(0, 1fr);
+            align-items: start;
+            gap: 10px;
+            padding: 8px 9px;
+            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(255,255,255,0.014);
+          }
+
+          .tmDiv {
+            display: none;
+          }
+
+          .tmKey {
+            font-size: 7.8px;
+            line-height: 1.35;
+            letter-spacing: 0.12em;
+          }
+
+          .tmVal {
+            font-size: clamp(16px, 5vw, 22px);
+            line-height: 1;
+            letter-spacing: 0.02em;
+          }
+
+          .tmDesc {
+            font-size: 12.5px;
+            line-height: 1.45;
+            color: rgba(255,255,255,0.62);
+          }
+
+          .tmValB {
+            font-size: 12px;
+            line-height: 1.4;
+          }
+
+          .teSignals {
+            padding: 0;
+            border: 0;
+            overflow: visible;
+            background: transparent;
+          }
+
+          .teColLbl {
+            margin-bottom: 7px;
+            font-size: 8px;
+            letter-spacing: 0.18em;
+          }
+
+          .teList {
+            display: flex;
+            flex-direction: row;
+            gap: 8px;
+            overflow-x: auto;
+            overflow-y: visible;
+            padding: 1px 1px 7px;
+            scroll-snap-type: x proximity;
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+          }
+
+          .teList::-webkit-scrollbar {
+            display: none;
+          }
+
+          .teRow {
+            flex: 0 0 min(66vw, 230px);
+            min-height: 82px;
+            padding: 10px;
+            gap: 9px;
+            border: 1px solid rgba(255,255,255,0.09);
+            background: rgba(255,255,255,0.012);
+            scroll-snap-align: start;
+          }
+
+          .teRow:last-child {
+            border-bottom: 1px solid rgba(255,255,255,0.09);
+          }
+
+          .teRow:hover {
+            background: rgba(255,255,255,0.022);
+          }
+
+          .teRowOn {
+            background: rgba(255,255,255,0.045) !important;
+            border-color: rgba(255,255,255,0.34) !important;
+            box-shadow:
+              0 0 0 1px rgba(255,255,255,0.04),
+              0 10px 28px rgba(0,0,0,0.38),
+              0 0 24px rgba(255,255,255,0.035);
+          }
+
+          .teRowOn::before {
+            left: 0;
+            right: 0;
+            top: 0;
+            bottom: auto;
+            width: auto;
+            height: 1px;
+            background: linear-gradient(90deg, rgba(255,255,255,0.62), transparent);
+          }
+
+          .teScan {
+            display: block;
+            opacity: 0.55;
+            animation-duration: 2.8s;
+          }
+
+          .teRowTop {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 8px;
+          }
+
+          .teNum {
+            min-width: 0;
+            font-size: 9px;
+          }
+
+          .teName {
+            overflow: hidden;
+            font-size: 10.5px;
+            line-height: 1.2;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+
+          .teChip {
+            padding: 3px 5px;
+            font-size: 7px;
+            letter-spacing: 0.08em;
+          }
+
+          .teMeter {
+            gap: 8px;
+          }
+
+          .teMeterT {
+            height: 2px;
+          }
+
+          .teMeterN {
+            min-width: 22px;
+            font-size: 8.5px;
+          }
+        }
+
         /* reduced motion */
         @media (prefers-reduced-motion: reduce) {
           .teScan { animation: none; }

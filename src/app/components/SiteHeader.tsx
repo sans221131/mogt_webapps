@@ -3,6 +3,7 @@
 import ServicesMegaMenu from './ServicesMegaMenu';
 import WorkMegaMenu from './WorkMegaMenu';
 import MobileNav from './MobileNav';
+import { useProjectIntake } from './project-intake/ProjectIntakeProvider';
 
 const CONTACT_EMAIL = 'hello@mogt.studio';
 const CONTACT_HREF = `mailto:${CONTACT_EMAIL}?subject=Project%20Inquiry%20%E2%80%94%20MOGT`;
@@ -14,6 +15,8 @@ const CONTACT_HREF = `mailto:${CONTACT_EMAIL}?subject=Project%20Inquiry%20%E2%80
  * on consuming pages in sync with this height.
  */
 export default function SiteHeader() {
+  const { openIntake } = useProjectIntake();
+
   return (
     <header className="shHeader">
       <a className="shBrand" href="/">
@@ -24,7 +27,16 @@ export default function SiteHeader() {
       <nav className="shNav">
         <WorkMegaMenu />
         <ServicesMegaMenu />
-        <a className="shNavCta" href={CONTACT_HREF}>Estimate a Project</a>
+        <a
+          className="shNavCta"
+          href={CONTACT_HREF}
+          onClick={(event) => {
+            event.preventDefault();
+            openIntake({ intent: 'estimate', sourceButton: 'Estimate a Project' });
+          }}
+        >
+          Estimate a Project
+        </a>
       </nav>
 
       <MobileNav contactHref={CONTACT_HREF} workHref="/#work" />
