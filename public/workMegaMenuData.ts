@@ -6,6 +6,7 @@ export type WorkProject = {
   slug: string;
   type: string;
   id: number;
+  logo: string | null;
 };
 
 export type WorkCategory = {
@@ -87,6 +88,16 @@ export function getAllWorkSlugs(): string[] {
   return Object.keys(SLUG_MAP);
 }
 
+// Slugs with an installed brand logo at /public/logos/<slug>.png. Everything
+// else falls back to a generated monogram tile in the UI.
+const LOGO_SLUGS = new Set<string>([
+  'resmedx-ehr',
+  'streax', 'jagofm', 'fastrack', 'plan-the-knot', 'buyers-place', 'westend-calling',
+  'celebrated-life', 'ichota', 'scan-me', 'lee-county-ems', 'fit-pro', 'breview', 'pazz',
+  'aqare', 'esim', 'denis-kebap', 'fastrak-deer', 'emboost', 'myassets', 'rad-run',
+  'talzent', 'culturequest', 'zvilo',
+]);
+
 function wp(slug: string): WorkProject {
   const id = SLUG_MAP[slug]!;
   const project = projects.find(p => p.id === id)!;
@@ -96,6 +107,7 @@ function wp(slug: string): WorkProject {
     slug,
     type: project.type,
     id,
+    logo: LOGO_SLUGS.has(slug) ? `/logos/${slug}.png` : null,
   };
 }
 
@@ -159,6 +171,7 @@ export const WORK_CATEGORIES: WorkCategory[] = [
       wp('instajamaica'),
       wp('plan-the-knot'),
       wp('denis-kebap'),
+      wp('wander'),
     ],
   },
   {
@@ -192,6 +205,8 @@ export const WORK_CATEGORIES: WorkCategory[] = [
       wp('gameset'),
       wp('ogbet'),
       wp('athena'),
+      wp('tennis-app'),
+      wp('movie-ticket-app'),
     ],
   },
   {
@@ -204,6 +219,9 @@ export const WORK_CATEGORIES: WorkCategory[] = [
       wp('scan-me'),
       wp('barbera'),
       wp('culturequest'),
+      wp('invoicehippo'),
+      wp('dream-rocket'),
+      wp('rad-run-events'),
     ],
   },
   {
@@ -216,6 +234,7 @@ export const WORK_CATEGORIES: WorkCategory[] = [
       wp('geo-sci'),
       wp('rad-run'),
       wp('rane-global'),
+      wp('esim'),
     ],
   },
 ];

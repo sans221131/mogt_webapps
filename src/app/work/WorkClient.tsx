@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AnimatePresence,
@@ -26,6 +27,18 @@ function typeLabel(t: string): string {
     'web & mobile': 'Web + Mobile',
   };
   return m[t.toLowerCase().trim()] ?? t;
+}
+
+// ── Monogram fallback ──────────────────────────────────────────────────────
+// Projects without an installed logo get a tailored initials tile.
+const MONO_STOP = new Set(['the', 'a', 'an', 'of', 'and', 'for', 'to', '&']);
+function monogram(title: string): string {
+  const words = title.split(/[\s\-/:&]+/).filter((w) => w && !MONO_STOP.has(w.toLowerCase()));
+  if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
+  const w = words[0] || title;
+  const caps = w.match(/[A-Z]/g);
+  if (caps && caps.length >= 2) return (caps[0] + caps[1]).toUpperCase();
+  return w.slice(0, 2).toUpperCase();
 }
 
 // ── Animated count-up ─────────────────────────────────────────────────────
@@ -313,33 +326,42 @@ export default function WorkClient() {
                   variants={gridStagger}
                 >
                   {results.map(({ project, category }) => (
-                    <motion.a
-                      key={project.slug}
-                      className="wkProjCard"
-                      href={`/work/${project.slug}`}
-                      variants={cardV}
-                    >
-                      <span className="wkProjTopBorder" aria-hidden="true" />
-                      <i className="wkProjCornerTL" aria-hidden="true" />
-                      <i className="wkProjCornerBR" aria-hidden="true" />
+                    <Link key={project.slug} href={`/work/${project.slug}`} passHref legacyBehavior>
+                      <motion.a
+                        className="wkProjCard"
+                        variants={cardV}
+                      >
+                        <span className="wkProjTopBorder" aria-hidden="true" />
+                        <i className="wkProjCornerTL" aria-hidden="true" />
+                        <i className="wkProjCornerBR" aria-hidden="true" />
 
-                      <div className="wkProjCardHead">
-                        <TypeBadge type={project.type} />
-                        {!activeCategory && (
-                          <span className="wkProjCat">{category.name}</span>
-                        )}
-                      </div>
+                        <span className="wkProjLogo" aria-hidden="true">
+                          {project.logo ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img className="wkProjLogoImg" src={project.logo} alt="" loading="lazy" draggable={false} />
+                          ) : (
+                            <span className="wkProjLogoMono">{monogram(project.title)}</span>
+                          )}
+                        </span>
 
-                      <h3 className="wkProjTitle">{project.title}</h3>
-                      <p className="wkProjDesc">{project.description}</p>
+                        <div className="wkProjCardHead">
+                          <TypeBadge type={project.type} />
+                          {!activeCategory && (
+                            <span className="wkProjCat">{category.name}</span>
+                          )}
+                        </div>
 
-                      <span className="wkProjCta" aria-hidden="true">
-                        View Project
-                        <svg viewBox="0 0 14 10" aria-hidden="true">
-                          <path d="M1 5h11M8 1.5 12.5 5 8 8.5" fill="none" stroke="currentColor" strokeWidth="1.3" />
-                        </svg>
-                      </span>
-                    </motion.a>
+                        <h3 className="wkProjTitle">{project.title}</h3>
+                        <p className="wkProjDesc">{project.description}</p>
+
+                        <span className="wkProjCta" aria-hidden="true">
+                          View Project
+                          <svg viewBox="0 0 14 10" aria-hidden="true">
+                            <path d="M1 5h11M8 1.5 12.5 5 8 8.5" fill="none" stroke="currentColor" strokeWidth="1.3" />
+                          </svg>
+                        </span>
+                      </motion.a>
+                    </Link>
                   ))}
                 </motion.div>
               )}
@@ -515,12 +537,9 @@ export default function WorkClient() {
 
         /* Category chips */
         .wkChips {
-          display: flex; align-items: center; gap: 4px;
+          display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 4px;
           padding: 10px clamp(16px, 3vw, 32px);
-          overflow-x: auto; overscroll-behavior-x: contain;
-          scrollbar-width: none;
         }
-        .wkChips::-webkit-scrollbar { display: none; }
 
         .wkChip {
           flex-shrink: 0;
@@ -719,6 +738,32 @@ export default function WorkClient() {
         }
         .wkProjCard:hover .wkProjCornerTL,
         .wkProjCard:hover .wkProjCornerBR { border-color: rgba(255,255,255,0.5); }
+
+        /* Project logo / monogram tile */
+        .wkProjLogo {
+          display: flex; align-items: center; justify-content: center;
+          width: 60px; height: 60px; flex: none;
+          border: 1px solid rgba(255,255,255,0.1);
+          background:
+            radial-gradient(circle at 50% 38%, rgba(255,255,255,0.05), transparent 70%),
+            rgba(255,255,255,0.015);
+          overflow: hidden;
+          transition: border-color 200ms ease;
+        }
+        .wkProjCard:hover .wkProjLogo { border-color: rgba(255,255,255,0.22); }
+        .wkProjLogoImg {
+          max-width: 72%; max-height: 72%; object-fit: contain;
+          filter: grayscale(1) brightness(1.12) opacity(0.7);
+          transition: filter 220ms ease, transform 220ms ease;
+        }
+        .wkProjCard:hover .wkProjLogoImg { filter: grayscale(0) brightness(1) opacity(1); transform: scale(1.05); }
+        .wkProjLogoMono {
+          font-family: var(--font-geist-mono, ui-monospace, monospace);
+          font-size: 19px; font-weight: 800; letter-spacing: 0.04em;
+          color: rgba(255,255,255,0.52);
+          transition: color 220ms ease;
+        }
+        .wkProjCard:hover .wkProjLogoMono { color: rgba(255,255,255,0.9); }
 
         .wkProjCardHead {
           display: flex; align-items: center; justify-content: space-between; gap: 8px;
