@@ -327,7 +327,7 @@ function BlueprintSVG({ step, idSuffix = '' }: { step: number; idSuffix?: string
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export default function ProcessBlueprintSection() {
+export default function ProcessBlueprintSection({ portalMode = false }: { portalMode?: boolean }) {
   const [activeStep, setActiveStep] = useState(0);
   const [hasBooted, setHasBooted] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
@@ -347,7 +347,8 @@ export default function ProcessBlueprintSection() {
     const handler = (e: Event) => {
       const detail = (e as CustomEvent<number>).detail;
       if (typeof detail === 'number' && !userOverrideRef.current) {
-        setActiveStep(Math.max(0, Math.min(5, detail)));
+        const next = Math.max(0, Math.min(5, detail));
+        setActiveStep((current) => (current === next ? current : next));
       }
     };
     window.addEventListener('blueprintStep', handler);
@@ -356,6 +357,7 @@ export default function ProcessBlueprintSection() {
 
   // Auto-cycle when no user interaction
   useEffect(() => {
+    if (portalMode) return;
     if (reducedMotionRef.current) return;
     autoTimerRef.current = setInterval(() => {
       if (!userOverrideRef.current) {
@@ -365,7 +367,7 @@ export default function ProcessBlueprintSection() {
     return () => {
       if (autoTimerRef.current) clearInterval(autoTimerRef.current);
     };
-  }, []);
+  }, [portalMode]);
 
   const handleStepActivate = (index: number) => {
     setActiveStep(index);
@@ -380,6 +382,27 @@ export default function ProcessBlueprintSection() {
   useEffect(() => {
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reduced) { setHasBooted(true); return; }
+
+    if (portalMode) {
+      const handleFocusStart = (event: Event) => {
+        const detail = (event as CustomEvent<{ variant?: string }>).detail;
+        if (detail?.variant === 'process') setHasBooted((current) => (current ? current : true));
+      };
+
+      const handleFocusEnd = (event: Event) => {
+        const detail = (event as CustomEvent<{ variant?: string }>).detail;
+        if (detail?.variant === 'process') setHasBooted((current) => (current ? false : current));
+      };
+
+      window.addEventListener('portalPanelFocusStart', handleFocusStart);
+      window.addEventListener('portalPanelFocusEnd', handleFocusEnd);
+
+      return () => {
+        window.removeEventListener('portalPanelFocusStart', handleFocusStart);
+        window.removeEventListener('portalPanelFocusEnd', handleFocusEnd);
+      };
+    }
+
     const el = sectionRef.current;
     if (!el) return;
     const io = new IntersectionObserver(
@@ -390,12 +413,12 @@ export default function ProcessBlueprintSection() {
     // Fallback: always boot after 4s so content never stays hidden
     const fallback = setTimeout(() => setHasBooted(true), 4000);
     return () => { io.disconnect(); clearTimeout(fallback); };
-  }, []);
+  }, [portalMode]);
 
   const progressPct = (activeStep / STEPS.length) * 100;
 
   return (
-    <div ref={sectionRef} className={`processBlueprint${hasBooted ? ' isBooted' : ''}`}>
+    <div ref={sectionRef} className={`processBlueprint${hasBooted ? ' isBooted' : ''}${portalMode ? ' isPortalStatic' : ''}`}>
 
       {/* ── Boot animation overlay ── */}
       <div className="bootLayer" aria-hidden="true">
@@ -456,10 +479,10 @@ export default function ProcessBlueprintSection() {
               <motion.div
                 key={activeStep}
                 className="detailInner"
-                initial={{ opacity: 0, y: 14, filter: 'blur(6px)' }}
+                initial={portalMode ? false : { opacity: 0, y: 14, filter: 'blur(6px)' }}
                 animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-                exit={{ opacity: 0, y: -14, filter: 'blur(6px)' }}
-                transition={{ duration: 0.42, ease: STEP_EASE }}
+                exit={portalMode ? undefined : { opacity: 0, y: -14, filter: 'blur(6px)' }}
+                transition={{ duration: portalMode ? 0 : 0.42, ease: STEP_EASE }}
               >
                 <div className="detailTop">
                   <span className="detailNum" aria-hidden="true">{step.id}</span>
@@ -1085,6 +1108,18 @@ export default function ProcessBlueprintSection() {
         .processBlueprint:not(.isBooted) .stepper,
         .processBlueprint:not(.isBooted) .processBody {
           opacity: 0;
+        }
+
+        .processBlueprint.isPortalStatic .processHeader,
+        .processBlueprint.isPortalStatic .stepper,
+        .processBlueprint.isPortalStatic .processBody {
+          opacity: 1;
+          transform: none;
+          animation: none !important;
+        }
+
+        .processBlueprint.isPortalStatic .bootLayer {
+          display: none;
         }
 
         .processBlueprint.isBooted .processHeader {

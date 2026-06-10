@@ -18,36 +18,79 @@ export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
 
     gsap.registerPlugin(ScrollTrigger);
 
-    // On touch/mobile devices, let ScrollTrigger use native scroll.
-    // Lenis touch smoothing interferes with pinned ScrollTrigger sections.
-    if (prefersReducedMotion || isTouchDevice) {
-      requestAnimationFrame(() => ScrollTrigger.refresh());
-      return;
-    }
+    let lenis: Lenis | null = null;
+    let firstFrame = 0;
+    let secondFrame = 0;
+    let postLoaderRefreshScheduled = false;
 
-    const lenis = new Lenis({
-      duration: 1.0,
-      easing: (t) => 1 - Math.pow(1 - t, 3),
-      smoothWheel: true,
-      syncTouch: false,
-      wheelMultiplier: 0.85,
-    });
+    const refreshAfterLoaderComplete = () => {
+      if (postLoaderRefreshScheduled) return;
+      postLoaderRefreshScheduled = true;
 
-    lenis.on('scroll', ScrollTrigger.update);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[mogt] loader-complete received', {
+          triggersBeforeRefresh: ScrollTrigger.getAll().length,
+        });
+      }
 
-    const update = (time: number) => {
-      lenis.raf(time * 1000);
+      firstFrame = requestAnimationFrame(() => {
+        secondFrame = requestAnimationFrame(() => {
+          (lenis as (Lenis & { resize?: () => void }) | null)?.resize?.();
+          ScrollTrigger.refresh(true);
+
+          if (process.env.NODE_ENV === 'development') {
+            console.log('[mogt] post-loader ScrollTrigger refresh complete', {
+              triggersAfterRefresh: ScrollTrigger.getAll().length,
+            });
+          }
+        });
+      });
     };
 
-    gsap.ticker.add(update);
-    gsap.ticker.lagSmoothing(0);
+    window.addEventListener('mogt:loader-complete', refreshAfterLoaderComplete);
 
+    // On touch/mobile devices, let ScrollTrigger use native scroll.
+    // Lenis touch smoothing interferes with pinned ScrollTrigger sections.
+    const useNativeScroll = prefersReducedMotion || isTouchDevice;
+
+    if (!useNativeScroll) {
+      lenis = new Lenis({
+        duration: 1.0,
+        easing: (t) => 1 - Math.pow(1 - t, 3),
+        smoothWheel: true,
+        syncTouch: false,
+        wheelMultiplier: 0.85,
+      });
+
+      lenis.on('scroll', ScrollTrigger.update);
+    }
+
+    const update = (time: number) => {
+      lenis?.raf(time * 1000);
+    };
+
+    if (lenis) {
+      gsap.ticker.add(update);
+      gsap.ticker.lagSmoothing(0);
+    }
+
+    // Early mount refreshes remain as safeguards; the authoritative refresh
+    // after the global loader unlocks scroll is handled by mogt:loader-complete.
     requestAnimationFrame(() => ScrollTrigger.refresh());
 
+    if ((window as Window & { __mogtLoaderComplete?: boolean }).__mogtLoaderComplete) {
+      refreshAfterLoaderComplete();
+    }
+
     return () => {
-      lenis.off('scroll', ScrollTrigger.update);
-      gsap.ticker.remove(update);
-      lenis.destroy();
+      window.removeEventListener('mogt:loader-complete', refreshAfterLoaderComplete);
+      if (firstFrame) cancelAnimationFrame(firstFrame);
+      if (secondFrame) cancelAnimationFrame(secondFrame);
+      if (lenis) {
+        lenis.off('scroll', ScrollTrigger.update);
+        gsap.ticker.remove(update);
+        lenis.destroy();
+      }
     };
   }, []);
 

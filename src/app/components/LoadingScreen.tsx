@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import AnimatedMogtLogo from './AnimatedMogtLogo';
 
 // Hold long enough for the assemble to play, but never trap the user.
@@ -11,6 +11,7 @@ const EXIT_MS = 650; // must match the .mogtLoader opacity/transform transition
 export default function LoadingScreen() {
   const [render, setRender] = useState(true);
   const [exiting, setExiting] = useState(false);
+  const loaderCompleteDispatchedRef = useRef(false);
 
   // Any back/forward navigation must do a clean, full reload — this heavy
   // WebGL/GSAP/Lenis page does not survive being resumed from a frozen state,
@@ -88,6 +89,25 @@ export default function LoadingScreen() {
     return () => {
       document.documentElement.style.overflow = '';
     };
+  }, [render]);
+
+  useEffect(() => {
+    if (render || loaderCompleteDispatchedRef.current) return;
+
+    const win = window as Window & { __mogtLoaderComplete?: boolean };
+    if (win.__mogtLoaderComplete) return;
+
+    loaderCompleteDispatchedRef.current = true;
+    win.__mogtLoaderComplete = true;
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[mogt] loader-complete dispatch', {
+        htmlOverflow: document.documentElement.style.overflow,
+        bodyOverflow: document.body.style.overflow,
+      });
+    }
+
+    window.dispatchEvent(new CustomEvent('mogt:loader-complete'));
   }, [render]);
 
   if (!render) return null;

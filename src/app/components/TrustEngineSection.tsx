@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useState, useCallback } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, useCallback } from 'react';
 import {
   motion,
   AnimatePresence,
@@ -176,9 +176,11 @@ function Counter({ value, animate }: { value: number; animate: boolean }) {
 function TrustCoreSVG({
   activeIndex,
   reducedMotion,
+  staticPreview = false,
 }: {
   activeIndex: number;
   reducedMotion: boolean;
+  staticPreview?: boolean;
 }) {
   const cx = 200, cy = 200;
   const sig = SIGNALS[activeIndex];
@@ -235,7 +237,7 @@ function TrustCoreSVG({
 
       <g clipPath="url(#tcClip)">
         <g>
-          {!reducedMotion && (
+          {!reducedMotion && !staticPreview && (
             <animateTransform
               attributeName="transform"
               type="rotate"
@@ -259,28 +261,28 @@ function TrustCoreSVG({
           <g key={i}>
             <motion.line
               x1={x} y1={y} x2={cx} y2={cy}
-              initial={{ stroke: 'rgba(255,255,255,0.05)', strokeWidth: 0.5 }}
+              initial={staticPreview ? false : { stroke: 'rgba(255,255,255,0.05)', strokeWidth: 0.5 }}
               animate={{
                 stroke: active ? 'rgba(255,255,255,0.32)' : 'rgba(255,255,255,0.05)',
                 strokeWidth: active ? 1.2 : 0.5,
               }}
-              transition={{ duration: 0.6, ease: EASE_OUT }}
+              transition={{ duration: staticPreview ? 0 : 0.6, ease: EASE_OUT }}
               strokeDasharray={active ? undefined : '3 4'}
             />
             {active && (
               <motion.circle
                 cx={x} cy={y}
-                initial={{ r: 4, opacity: 0 }}
+                initial={staticPreview ? false : { r: 4, opacity: 0 }}
                 animate={{ r: 9, opacity: 1 }}
-                transition={{ duration: 0.6, ease: EASE_OUT }}
+                transition={{ duration: staticPreview ? 0 : 0.6, ease: EASE_OUT }}
                 fill="none" stroke="rgba(255,255,255,0.28)" strokeWidth="1"
               />
             )}
             <motion.circle
               cx={x} cy={y}
-              initial={{ r: 3, fill: 'rgba(255,255,255,0.22)' }}
+              initial={staticPreview ? false : { r: 3, fill: 'rgba(255,255,255,0.22)' }}
               animate={{ r: active ? 5.5 : 3, fill: active ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.22)' }}
-              transition={{ duration: 0.5, ease: EASE_OUT }}
+              transition={{ duration: staticPreview ? 0 : 0.5, ease: EASE_OUT }}
             />
           </g>
         );
@@ -304,11 +306,13 @@ function TrustCoreSVG({
 
 // ── Main component ─────────────────────────────────────────────────────────────
 
-export default function TrustEngineSection() {
+export default function TrustEngineSection({ portalMode = false }: { portalMode?: boolean }) {
   const [activeIndex, setActiveIndex]   = useState(0);
   const [lockedIndex, setLockedIndex]   = useState<number | null>(null);
   const [isMounted,   setIsMounted]     = useState(false);
   const [entered,     setEntered]       = useState(false);
+  const [isPortalFocused, setIsPortalFocused] = useState(false);
+  const portalFocusedRef = useRef(false);
   const reduce = useReducedMotion();
   const reducedMotion = !!reduce;
 
@@ -324,18 +328,47 @@ export default function TrustEngineSection() {
     if (reducedMotion) setEntered(true);
   }, [reducedMotion]);
 
+  useEffect(() => {
+    if (!portalMode) return;
+
+    const handleFocusStart = (event: Event) => {
+      const detail = (event as CustomEvent<{ variant?: string }>).detail;
+      if (detail?.variant !== 'trustEngine') return;
+      portalFocusedRef.current = true;
+      setIsPortalFocused((current) => (current ? current : true));
+      setEntered((current) => (current ? current : true));
+    };
+
+    const handleFocusEnd = (event: Event) => {
+      const detail = (event as CustomEvent<{ variant?: string }>).detail;
+      if (detail?.variant !== 'trustEngine') return;
+      portalFocusedRef.current = false;
+      setIsPortalFocused((current) => (current ? false : current));
+      setEntered((current) => (current ? false : current));
+    };
+
+    window.addEventListener('portalPanelFocusStart', handleFocusStart);
+    window.addEventListener('portalPanelFocusEnd', handleFocusEnd);
+
+    return () => {
+      window.removeEventListener('portalPanelFocusStart', handleFocusStart);
+      window.removeEventListener('portalPanelFocusEnd', handleFocusEnd);
+    };
+  }, [portalMode]);
+
   // scroll-driven signal: CoinScene dispatches 'trustSignal' with detail = 0-5.
   // First receipt = panel reached → trigger the cinematic entrance.
   useIsoEffect(() => {
     if (!isMounted) return;
     const handler = (e: Event) => {
-      setEntered(true);
+      if (portalMode && !portalFocusedRef.current) return;
+      setEntered((current) => (current ? current : true));
       const idx = (e as CustomEvent<number>).detail;
-      if (lockedIndex === null) setActiveIndex(idx);
+      if (lockedIndex === null) setActiveIndex((current) => (current === idx ? current : idx));
     };
     window.addEventListener('trustSignal', handler);
     return () => window.removeEventListener('trustSignal', handler);
-  }, [isMounted, lockedIndex]);
+  }, [isMounted, lockedIndex, portalMode]);
 
   const handleHover = useCallback((i: number) => {
     if (lockedIndex === null) setActiveIndex(i);
@@ -350,13 +383,15 @@ export default function TrustEngineSection() {
     else { setLockedIndex(i); setActiveIndex(i); }
   }, [lockedIndex]);
 
-  const show = entered ? 'show' : 'hidden';
+  const show = portalMode ? 'show' : (entered ? 'show' : 'hidden');
+  const countersActive = portalMode ? isPortalFocused : entered;
+  const staticPortalPreview = portalMode && !isPortalFocused;
 
   return (
     <motion.div
       className="te"
       variants={containerV}
-      initial="hidden"
+      initial={portalMode ? false : 'hidden'}
       animate={show}
     >
       {/* background grid + faint words */}
@@ -372,7 +407,7 @@ export default function TrustEngineSection() {
           <div className="teHeadRow">
             <motion.h2 className="teH2" variants={riseV}>WHY TEAMS CHOOSE US</motion.h2>
             <motion.div className="teMeta" variants={riseV}>
-              <span className="teMetaChip"><i>TRUST INDEX</i><b><Counter value={sig.strength} animate={entered} />%</b></span>
+              <span className="teMetaChip"><i>TRUST INDEX</i><b><Counter value={sig.strength} animate={countersActive} />%</b></span>
               <span className="teMetaChip"><i>BUILD RISK</i><b>LOW</b></span>
               <span className="teMetaChip"><i>STATUS</i><b>VERIFIED</b></span>
             </motion.div>
@@ -433,7 +468,7 @@ export default function TrustEngineSection() {
             <b className="tcBr tcBrBL" aria-hidden="true" /><b className="tcBr tcBrBR" aria-hidden="true" />
 
             <div className="tcVis">
-              {isMounted && <TrustCoreSVG activeIndex={activeIndex} reducedMotion={reducedMotion} />}
+              {isMounted && <TrustCoreSVG activeIndex={activeIndex} reducedMotion={reducedMotion} staticPreview={staticPortalPreview} />}
             </div>
 
             <div className="tcReadout">
@@ -441,10 +476,10 @@ export default function TrustEngineSection() {
                 <motion.div
                   key={activeIndex}
                   className="tcReadoutInner"
-                  initial={{ opacity: 0, y: 10 }}
+                  initial={staticPortalPreview ? false : { opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.4, ease: EASE_OUT }}
+                  exit={staticPortalPreview ? undefined : { opacity: 0, y: -10 }}
+                  transition={{ duration: staticPortalPreview ? 0 : 0.4, ease: EASE_OUT }}
                 >
                   {sig.coreReadout.map((r, i) => (
                     <div key={i} className="tcRRow">
@@ -474,10 +509,10 @@ export default function TrustEngineSection() {
                 <motion.div
                   key={activeIndex}
                   className="tmBodyInner"
-                  initial={{ opacity: 0, x: 18, filter: 'blur(6px)' }}
+                  initial={staticPortalPreview ? false : { opacity: 0, x: 18, filter: 'blur(6px)' }}
                   animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
-                  exit={{ opacity: 0, x: -18, filter: 'blur(6px)' }}
-                  transition={{ duration: 0.45, ease: EASE_OUT }}
+                  exit={staticPortalPreview ? undefined : { opacity: 0, x: -18, filter: 'blur(6px)' }}
+                  transition={{ duration: staticPortalPreview ? 0 : 0.45, ease: EASE_OUT }}
                 >
                   <div className="tmRow tmRowHead">
                     <span className="tmKey">SIGNAL {sig.id}</span>

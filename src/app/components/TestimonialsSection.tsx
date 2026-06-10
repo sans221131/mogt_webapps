@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { type CSSProperties, useRef, useState } from 'react';
+import { type CSSProperties, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, type Variants, useInView, useReducedMotion } from 'framer-motion';
 
 type Testimonial = {
@@ -86,16 +86,53 @@ const PROOF_METRICS = [
 const CONNECTOR_ROW_START = 188;
 const CONNECTOR_ROW_GAP = 43;
 
-export default function TestimonialsSection() {
+export default function TestimonialsSection({ portalMode = false }: { portalMode?: boolean }) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [portalEntered, setPortalEntered] = useState(false);
   const sectionRef = useRef<HTMLElement | null>(null);
   const prefersReducedMotion = useReducedMotion();
   const isInView = useInView(sectionRef, { once: true, amount: 0.32 });
   const active = TESTIMONIALS[activeIndex];
   const connectorY = CONNECTOR_ROW_START + activeIndex * CONNECTOR_ROW_GAP;
   const connectorStyle = { '--proof-active-row': activeIndex } as CSSProperties;
-  const initialState = prefersReducedMotion ? false : 'hidden';
-  const animateState = prefersReducedMotion || isInView ? 'visible' : 'hidden';
+  const initialState = prefersReducedMotion || portalMode ? false : 'hidden';
+  const focusReady = portalMode ? portalEntered : isInView;
+  const staticPortalPreview = portalMode && !focusReady;
+  const animateState = prefersReducedMotion || portalMode || isInView ? 'visible' : 'hidden';
+
+  // Portal-aware motion timings: crisp enough to complete inside the focus
+  // window so nothing is still animating when the GSAP carrier starts exiting.
+  const recordDuration = portalMode ? 0.3 : 0.42;
+  const outcomeStagger = portalMode ? 0.025 : 0.055;
+  const outcomeDuration = portalMode ? 0.18 : 0.26;
+  const scanLineDuration = portalMode ? 0.3 : 0.64;
+  const scanLineDelay = portalMode ? 0.04 : 0.15;
+
+  const sectionClassName = [
+    'testimonials',
+    portalMode ? 'isPortalMode' : '',
+    portalMode ? (staticPortalPreview ? 'isStaticPreview' : 'isFocusedPreview') : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  useEffect(() => {
+    if (!portalMode) return;
+
+    const handleFocusStart = (event: Event) => {
+      const detail = (event as CustomEvent<{ variant?: string }>).detail;
+      if (detail?.variant === 'testimonials') setPortalEntered((current) => (current ? current : true));
+    };
+
+    // Intentionally do NOT listen for portalPanelFocusEnd in portal mode: once
+    // the panel has booted we keep it booted (like SelectedWorkVault), so Framer
+    // Motion never retracts/animates out while the panel is exiting.
+    window.addEventListener('portalPanelFocusStart', handleFocusStart);
+
+    return () => {
+      window.removeEventListener('portalPanelFocusStart', handleFocusStart);
+    };
+  }, [portalMode]);
 
   const sectionMotion: Variants = {
     hidden: { opacity: 0 },
@@ -110,11 +147,12 @@ export default function TestimonialsSection() {
   };
 
   const itemMotion: Variants = {
-    hidden: { opacity: 0, y: 16, filter: 'blur(8px)' },
+    // Blur dropped in portal mode (no live filter animation on the moving panel).
+    hidden: { opacity: 0, y: 16, ...(portalMode ? {} : { filter: 'blur(8px)' }) },
     visible: {
       opacity: 1,
       y: 0,
-      filter: 'blur(0px)',
+      ...(portalMode ? {} : { filter: 'blur(0px)' }),
       transition: { duration: 0.48, ease: 'easeOut' },
     },
   };
@@ -125,7 +163,7 @@ export default function TestimonialsSection() {
       opacity: 1,
       y: 0,
       clipPath: 'inset(0% 0% 0% 0%)',
-      transition: { duration: 0.42, ease: 'easeOut' },
+      transition: { duration: recordDuration, ease: 'easeOut' },
     },
     exit: {
       opacity: 0,
@@ -138,9 +176,11 @@ export default function TestimonialsSection() {
   return (
     <motion.section
       ref={sectionRef}
-      className="testimonials"
+      className={sectionClassName}
       aria-labelledby="testimonials-title"
-      data-lenis-prevent
+      // Only prevent Lenis for the standalone version (which has its own scroll).
+      // In portal mode the panel must not block the pinned scene's scroll.
+      data-lenis-prevent={portalMode ? undefined : ''}
       initial={initialState}
       animate={animateState}
       variants={sectionMotion}
@@ -175,9 +215,9 @@ export default function TestimonialsSection() {
             <motion.span
               className="archiveScanLine"
               aria-hidden="true"
-              initial={prefersReducedMotion ? false : { scaleX: 0, opacity: 0 }}
-              animate={prefersReducedMotion || isInView ? { scaleX: 1, opacity: 1 } : { scaleX: 0, opacity: 0 }}
-              transition={{ duration: 0.64, ease: 'easeOut', delay: 0.15 }}
+              initial={prefersReducedMotion || staticPortalPreview ? false : { scaleX: 0, opacity: 0 }}
+              animate={prefersReducedMotion || focusReady ? { scaleX: 1, opacity: 1 } : { scaleX: 0, opacity: 0 }}
+              transition={{ duration: scanLineDuration, ease: 'easeOut', delay: scanLineDelay }}
             />
           </header>
 
@@ -241,7 +281,7 @@ export default function TestimonialsSection() {
                   key={active.id}
                   className="proofConnectorActive"
                   d={`M16 ${connectorY} H66`}
-                  initial={prefersReducedMotion ? false : { pathLength: 0, opacity: 0 }}
+                  initial={prefersReducedMotion || staticPortalPreview ? false : { pathLength: 0, opacity: 0 }}
                   animate={{ pathLength: 1, opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.34, ease: 'easeOut' }}
@@ -255,7 +295,7 @@ export default function TestimonialsSection() {
                   key={active.id}
                   className="proofRecord"
                   variants={recordMotion}
-                  initial={prefersReducedMotion ? false : 'hidden'}
+                  initial={prefersReducedMotion || staticPortalPreview ? false : 'hidden'}
                   animate="visible"
                   exit={prefersReducedMotion ? undefined : 'exit'}
                 >
@@ -314,14 +354,14 @@ export default function TestimonialsSection() {
                   <motion.div
                     key={`${active.id}-signals`}
                     className="proofOutcomeGrid"
-                    initial={prefersReducedMotion ? false : 'hidden'}
+                    initial={prefersReducedMotion || staticPortalPreview ? false : 'hidden'}
                     animate="visible"
                     exit={prefersReducedMotion ? undefined : 'exit'}
                     variants={{
                       hidden: { opacity: 0 },
                       visible: {
                         opacity: 1,
-                        transition: { staggerChildren: 0.055, delayChildren: 0.05 },
+                        transition: { staggerChildren: outcomeStagger, delayChildren: 0.05 },
                       },
                       exit: { opacity: 0, transition: { duration: 0.12 } },
                     }}
@@ -336,7 +376,7 @@ export default function TestimonialsSection() {
                             opacity: 1,
                             y: 0,
                             clipPath: 'inset(0% 0% 0% 0%)',
-                            transition: { duration: 0.26, ease: 'easeOut' },
+                            transition: { duration: outcomeDuration, ease: 'easeOut' },
                           },
                         }}
                       >
@@ -362,7 +402,9 @@ export default function TestimonialsSection() {
           color: rgba(255, 255, 255, 0.92);
           font-family: var(--font-geist-mono, 'Courier New', monospace);
           overflow: hidden;
-          pointer-events: all;
+          /* Interactivity is governed by the parent .overlayPanel wrapper, which
+             CoinScene toggles auto (focus) / none (approach/exit). Do not force
+             pointer-events here or cards react while the panel is not focused. */
           isolation: isolate;
         }
 
@@ -443,13 +485,15 @@ export default function TestimonialsSection() {
           display: flex;
           flex-direction: column;
           border: 1px solid rgba(255, 255, 255, 0.14);
+          /* Solid layered background instead of backdrop-filter: a live backdrop
+             blur is recomputed every frame against the moving 3D portal carrier
+             and is the main source of transition jank. */
           background:
-            linear-gradient(180deg, rgba(255, 255, 255, 0.036), rgba(255, 255, 255, 0.008)),
-            rgba(7, 7, 7, 0.72);
+            linear-gradient(180deg, rgba(18, 18, 18, 0.96), rgba(8, 8, 8, 0.96)),
+            rgba(0, 0, 0, 0.92);
           box-shadow:
             inset 0 1px 0 rgba(255, 255, 255, 0.08),
             0 40px 120px rgba(0, 0, 0, 0.55);
-          backdrop-filter: blur(12px);
           overflow: hidden;
         }
 
@@ -972,6 +1016,79 @@ export default function TestimonialsSection() {
           font-weight: 800;
           line-height: 1.25;
           text-transform: uppercase;
+        }
+
+        /* ── Portal-mode simplification ─────────────────────────────────────
+           Density reductions apply ONLY inside the CoinScene portal panel
+           (.isPortalMode). The standalone / non-portal layout above is intact. */
+        .testimonials.isPortalMode .testimonialsInner {
+          padding-top: clamp(46px, 7vh, 66px);
+          padding-bottom: clamp(20px, 4vh, 40px);
+        }
+
+        .testimonials.isPortalMode .proofConsole {
+          grid-template-columns: minmax(220px, 0.72fr) minmax(0, 1fr);
+          gap: clamp(18px, 2.2vw, 28px);
+        }
+
+        .testimonials.isPortalMode .proofConnector,
+        .testimonials.isPortalMode .proofMetrics {
+          display: none;
+        }
+
+        .testimonials.isPortalMode .proofSignals {
+          padding-top: clamp(8px, 1.1vh, 12px);
+          padding-bottom: clamp(8px, 1.1vh, 12px);
+        }
+
+        .testimonials.isPortalMode .proofOutcome {
+          min-height: clamp(28px, 4vh, 36px);
+        }
+
+        /* Before focus the panel is still flying in — keep the heavy decorative
+           loops idle so the moving 3D carrier stays clean. */
+        .testimonials.isPortalMode.isStaticPreview .testimonialsBg,
+        .testimonials.isPortalMode.isStaticPreview .testimonialsNoise,
+        .testimonials.isPortalMode.isStaticPreview .proofShell::after {
+          animation-play-state: paused;
+        }
+
+        /* The noise layer is the most expensive: keep it permanently calm in
+           portal mode (a static dim wash instead of an 8fps full-layer repaint). */
+        .testimonials.isPortalMode .testimonialsNoise {
+          animation: none;
+          opacity: 0.08;
+        }
+
+        /* Mobile portal containment: fit inside the pinned panel instead of
+           creating a nested scroll mini-page inside the pinned scroll scene. */
+        @media (max-width: 768px) {
+          .testimonials.isPortalMode {
+            overflow: hidden;
+          }
+
+          .testimonials.isPortalMode .testimonialsInner {
+            height: 100%;
+            min-height: 100%;
+            padding-top: clamp(54px, 8vh, 72px);
+            padding-bottom: 18px;
+          }
+
+          .testimonials.isPortalMode .proofShell {
+            flex: 1;
+            max-height: calc(100svh - 110px);
+            overflow: hidden;
+          }
+
+          .testimonials.isPortalMode .proofConsole {
+            grid-template-columns: 1fr;
+          }
+
+          .testimonials.isPortalMode .proofConnector,
+          .testimonials.isPortalMode .proofMetrics,
+          .testimonials.isPortalMode .proofSignals {
+            display: none;
+          }
         }
 
         @keyframes testimonialsGridDrift {

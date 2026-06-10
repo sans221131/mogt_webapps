@@ -318,7 +318,7 @@ function ArrowIcon(): ReactNode {
   );
 }
 
-export default function SelectedWorkVault() {
+export default function SelectedWorkVault({ portalMode = false }: { portalMode?: boolean }) {
   const reduceMotion = Boolean(useReducedMotion());
   const reduceMotionRef = useRef(reduceMotion);
   const cardRef = useRef<HTMLDivElement | null>(null);
@@ -335,7 +335,7 @@ export default function SelectedWorkVault() {
 
   useEffect(() => {
     if (reduceMotion) return;
-    const handleBoot = () => setBooted(true);
+    const handleBoot = () => setBooted((current) => (current ? current : true));
     window.addEventListener('vaultBoot', handleBoot);
     return () => window.removeEventListener('vaultBoot', handleBoot);
   }, [reduceMotion]);
@@ -344,6 +344,7 @@ export default function SelectedWorkVault() {
   const activeIndex = selectedIndex >= 0 ? selectedIndex : PROJECTS.findIndex((project) => project.slug === DEFAULT_SLUG);
   const selectedProject = PROJECTS[activeIndex];
   const selectorProjects = useMemo(() => [...PROJECTS, ...PROJECTS], []);
+  const disableInternalEntrances = reduceMotion || portalMode;
 
   const selectProject = useCallback((slug: string) => {
     setSelectedSlug((current) => (current === slug ? current : slug));
@@ -416,9 +417,9 @@ export default function SelectedWorkVault() {
             <motion.div
               key={selectedProject.slug}
               className="featuredGrid"
-              initial={reduceMotion ? false : { opacity: 0, y: 16, filter: 'blur(8px)' }}
+              initial={disableInternalEntrances ? false : { opacity: 0, y: 16, filter: 'blur(8px)' }}
               animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-              transition={{ duration: reduceMotion ? 0 : 0.46, ease: EASE_OUT }}
+              transition={{ duration: disableInternalEntrances ? 0 : 0.46, ease: EASE_OUT }}
             >
               <div className="projectInfo">
                 <div className="markStage">
@@ -453,7 +454,7 @@ export default function SelectedWorkVault() {
                 </div>
               </div>
 
-              {renderProductSignals(selectedProject, reduceMotion)}
+              {renderProductSignals(selectedProject, disableInternalEntrances)}
             </motion.div>
           </div>
         </div>
@@ -506,9 +507,9 @@ export default function SelectedWorkVault() {
             <motion.div
               key={selectedProject.slug}
               className="mobileCardInner"
-              initial={reduceMotion ? false : { opacity: 0, y: 10, filter: 'blur(6px)' }}
+              initial={disableInternalEntrances ? false : { opacity: 0, y: 10, filter: 'blur(6px)' }}
               animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-              transition={{ duration: reduceMotion ? 0 : 0.38, ease: EASE_OUT }}
+              transition={{ duration: disableInternalEntrances ? 0 : 0.38, ease: EASE_OUT }}
             >
               <div className="mobileCardTop">
                 {selectedProject.logo ? (
@@ -581,9 +582,9 @@ export default function SelectedWorkVault() {
                           stroke={seg.stroke}
                           strokeDasharray={`${seg.dash} ${seg.circumference - seg.dash}`}
                           strokeDashoffset={-seg.offset}
-                          initial={reduceMotion ? false : { strokeDasharray: `0 ${seg.circumference}`, opacity: 0 }}
+                          initial={disableInternalEntrances ? false : { strokeDasharray: `0 ${seg.circumference}`, opacity: 0 }}
                           animate={{ strokeDasharray: `${seg.dash} ${seg.circumference - seg.dash}`, opacity: 1 }}
-                          transition={{ duration: reduceMotion ? 0 : 0.6, ease: EASE_OUT }}
+                          transition={{ duration: disableInternalEntrances ? 0 : 0.6, ease: EASE_OUT }}
                         />
                       ))}
                     </svg>
@@ -602,9 +603,13 @@ export default function SelectedWorkVault() {
                           <motion.i
                             key={`${selectedProject.slug}-mob-bar-${seg.label}`}
                             style={{ background: seg.stroke }}
-                            initial={reduceMotion ? false : { width: 0 }}
+                            initial={disableInternalEntrances ? false : { width: 0 }}
                             animate={{ width: `${seg.value}%` }}
-                            transition={{ duration: reduceMotion ? 0 : 0.6, delay: reduceMotion ? 0 : idx * 0.06, ease: EASE_OUT }}
+                            transition={{
+                              duration: disableInternalEntrances ? 0 : 0.6,
+                              delay: disableInternalEntrances ? 0 : idx * 0.06,
+                              ease: EASE_OUT,
+                            }}
                           />
                         </span>
                       </div>

@@ -42,6 +42,16 @@ type LayoutSettings = {
   opacityMax: number;
 };
 
+type PortalPanelStage = 'idle' | 'deep' | 'approach' | 'focus' | 'exit';
+
+type PortalPanelEventDetail = {
+  index: number;
+  variant: string;
+  label: string;
+  stage: PortalPanelStage;
+  focusProgress: number;
+};
+
 type CoinUserData = {
   baseAngle: number;
   index: number;
@@ -1238,9 +1248,8 @@ export default function CoinOrbitHero() {
 
     loadingTimer = setTimeout(() => {
       setIsLoading(false);
-      requestAnimationFrame(() => {
-        ScrollTrigger.refresh();
-      });
+      // Authoritative ScrollTrigger.refresh runs from SmoothScrollProvider after
+      // mogt:loader-complete, so no refresh is triggered here.
     }, 180);
 
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -1316,49 +1325,81 @@ export default function CoinOrbitHero() {
 
         gsap.set(specializationActionsRef.current, { pointerEvents: 'none' });
 
-        // Overlay panels start hidden *behind* — clipped from the bottom up,
-        // pushed down and slightly shrunk/blurred so the reveal reads as the
-        // panel emerging from underneath the previous layer rather than a
-        // plain section appearing below it.
-        gsap.set(overlayPanelRefs.current, {
-          autoAlpha: 0,
-          yPercent: isMobile ? 8 : 12,
-          scale: 0.985,
-          clipPath: 'inset(100% 0% 0% 0%)',
-          filter: isMobile ? 'blur(10px)' : 'blur(16px)',
-          transformOrigin: '50% 50%',
-        });
+        const isPortalCompact = window.matchMedia('(max-width: 768px)').matches || useMobileScrollTuning;
+        const portalSettings = {
+          // Far/deep: the FULL component is visible but faint, small and dim — it
+          // reads as "the next section, far away," never an empty frame. Less deep
+          // and larger than before so its details are legible at a distance.
+          farAlpha: isPortalCompact ? 0.32 : 0.26,
+          approachAlpha: isPortalCompact ? 0.8 : 0.84,
+          farScale: isPortalCompact ? 0.82 : 0.76,
+          approachScale: isPortalCompact ? 0.9 : 0.92,
+          exitScale: isPortalCompact ? 1.18 : 1.22,
+          farYPercent: isPortalCompact ? 5 : 7,
+          approachYPercent: isPortalCompact ? 2 : 2.5,
+          exitYPercent: isPortalCompact ? -5 : -7,
+          farBrightness: 0.84,
+          approachBrightness: 0.96,
+          exitBrightness: 1.08,
+          farZ: isPortalCompact ? -260 : -380,
+          approachZ: isPortalCompact ? -100 : -150,
+          exitZ: isPortalCompact ? 110 : 180,
+          transformPerspective: isPortalCompact ? 900 : 1250,
+        };
+
+        // Portal depth is conveyed via opacity / yPercent / z / scale only.
+        // Blur was removed from the scrubbed timeline (GPU repaint per frame on
+        // 6 composited layers). Light brightness shift is cheap and stable.
+        const portalFilter = (brightness: number) =>
+          `brightness(${brightness})`;
+
+        const setPortalPanelInitialState = (panel: HTMLDivElement) => {
+          panel.classList.remove('isAshExiting');
+          gsap.set(panel, {
+            autoAlpha: 0,
+            yPercent: portalSettings.farYPercent,
+            z: portalSettings.farZ,
+            scale: portalSettings.farScale,
+            transformPerspective: portalSettings.transformPerspective,
+            transformOrigin: '50% 50%',
+            clipPath: 'inset(0% 0% 0% 0%)',
+            filter: portalFilter(portalSettings.farBrightness),
+            pointerEvents: 'none',
+          });
+        };
+
+        overlayPanelRefs.current.forEach(setPortalPanelInitialState);
 
         gsap.set(systemsIndexLogoRef.current, {
-          autoAlpha: 0,
-          scale: 0.92,
-          filter: 'blur(18px)',
+          autoAlpha: 1,
+          scale: 1,
+          filter: 'blur(0px)',
         });
 
         gsap.set(systemsIntroRef.current, {
-          autoAlpha: 0,
-          y: isMobile ? 34 : 48,
-          filter: isMobile ? 'blur(12px)' : 'blur(18px)',
+          autoAlpha: 1,
+          y: 0,
+          filter: 'blur(0px)',
         });
 
         gsap.set(systemsIndustryMatrixRef.current, {
-          autoAlpha: 0,
-          y: isMobile ? 28 : 38,
-          filter: isMobile ? 'blur(12px)' : 'blur(18px)',
+          autoAlpha: 1,
+          y: 0,
+          filter: 'blur(0px)',
         });
 
         gsap.set(systemsCapabilitiesRef.current, {
-          autoAlpha: 0,
-          y: isMobile ? 24 : 32,
-          filter: isMobile ? 'blur(10px)' : 'blur(16px)',
+          autoAlpha: 1,
+          y: 0,
+          filter: 'blur(0px)',
         });
 
         // Section B (Selected Work vault) — heading + cards stagger in.
         gsap.set('.vaultReveal', {
-          autoAlpha: 0,
-          y: isMobile ? 30 : 42,
-          scale: 0.96,
-          filter: isMobile ? 'blur(12px)' : 'blur(18px)',
+          autoAlpha: 1,
+          y: 0,
+          scale: 1,
+          filter: 'blur(0px)',
           transformOrigin: '50% 50%',
         });
 
@@ -1372,32 +1413,237 @@ export default function CoinOrbitHero() {
         });
 
         const sectionAEnterAt = 1.18;
-        const sectionALogoAt = sectionAEnterAt + 0.08;
-        const sectionAIntroAt = sectionAEnterAt + 0.18;
-        const sectionAMatrixAt = sectionAEnterAt + 0.58;
-        const sectionACapabilitiesAt = sectionAEnterAt + 0.98;
         const sectionAHoldUntil = sectionAEnterAt + 1.9;
         const sectionBEnterAt = sectionAHoldUntil + 0.25;
-        // Spacing between consecutive panel reveals. panelRevealDur is how long
-        // each reveal/exit takes. Because a panel's exit fires at the exact
-        // moment the next panel begins revealing, the two cross over with no
-        // blank gap — and the short remainder (panelStep − panelRevealDur) is
-        // the only time a panel sits still, keeping the scene in motion.
-        const panelStep = 1.6;
-        const panelRevealDur = 1.0;
+        // Spacing between consecutive portal panels. The readable focus window
+        // is intentionally longer than approach/exit so child components only
+        // animate after the portal panel is sharp and full-screen.
+        const panelStep = 2.45;
+        // Approach is long and overlaps the focus tween so deep → readable reads
+        // as one continuous zoom rather than two segmented motions. The exit
+        // connects into the next panel's approach (no hard stop).
+        const portalApproachDuration = 0.78;
+        const portalFocusOffset = 0.50;
+        const portalFocusDuration = 0.62;
+        const portalExitOffset = 2.25;
+        const portalExitDuration = 0.66;
 
-        // One-shot: fire the Selected Work "archive boot" the first time the
-        // scrubbed playhead reaches Section B. Guarded so scrubbing back and
-        // forth never replays it.
+        // Continuous focus drift: during the readable hold the carrier keeps
+        // creeping subtly toward the viewer so it never goes visually dead-still.
+        const portalFocusDriftZ = isPortalCompact ? 18 : 28;
+        const portalFocusDriftScale = isPortalCompact ? 1.012 : 1.02;
+        const portalFocusDriftYPercent = isPortalCompact ? -0.55 : -0.9;
+
+        // Uniform spacing → a continuous zoom conveyor. Each panel enters ~0.20
+        // after the previous starts exiting and ~0.46 before it fully leaves, so
+        // the next full component is already visible (far / faint / small) while
+        // the previous exits. No empty portal frame, no large dead gap before
+        // ProjectIntake.
+        const getPanelEnterAt = (index: number) =>
+          index === 0 ? sectionAEnterAt : sectionBEnterAt + (index - 1) * panelStep;
+
+        const getPanelFocusStartAt = (index: number) =>
+          getPanelEnterAt(index) + portalFocusOffset + portalFocusDuration;
+
+        const getPanelExitStartAt = (index: number) =>
+          getPanelEnterAt(index) + portalExitOffset;
+
+        const getPanelFocusEndAt = (index: number) =>
+          getPanelExitStartAt(index);
+
+        const getPanelExitEndAt = (index: number) =>
+          getPanelExitStartAt(index) + portalExitDuration;
+
+        const getPortalPanelTiming = (index: number) => {
+          const enterAt = getPanelEnterAt(index);
+          return {
+            enterAt,
+            focusAt: enterAt + portalFocusOffset,
+            focusStartAt: getPanelFocusStartAt(index),
+            focusEndAt: getPanelFocusEndAt(index),
+            exitAt: getPanelExitStartAt(index),
+            exitEndAt: getPanelExitEndAt(index),
+          };
+        };
+
+        const getPortalPanelStage = (index: number, timePos: number): PortalPanelStage => {
+          const timing = getPortalPanelTiming(index);
+          if (timePos < timing.enterAt) return 'deep';
+          if (timePos < timing.focusStartAt) return 'approach';
+          if (timePos < timing.focusEndAt) return 'focus';
+          if (timePos < timing.exitEndAt) return 'exit';
+          return 'idle';
+        };
+
+        const getPanelFocusProgress = (index: number, timePos: number) => {
+          const focusStartAt = getPanelFocusStartAt(index);
+          const focusEndAt = getPanelFocusEndAt(index);
+          const focusDuration = Math.max(focusEndAt - focusStartAt, 0.001);
+          return Math.max(0, Math.min(1, (timePos - focusStartAt) / focusDuration));
+        };
+
+        const getPortalPanelDetail = (
+          index: number,
+          stage: PortalPanelStage,
+          focusProgress: number,
+        ): PortalPanelEventDetail => {
+          const panel = OVERLAY_PANELS[index];
+          return {
+            index,
+            variant: panel?.variant ?? '',
+            label: panel?.label ?? '',
+            stage,
+            focusProgress,
+          };
+        };
+
+        const getActivePortalPanel = (timePos: number): PortalPanelEventDetail => {
+          for (let index = 0; index < OVERLAY_PANELS.length; index += 1) {
+            const stage = getPortalPanelStage(index, timePos);
+            if (stage !== 'idle') {
+              const focusProgress = stage === 'focus' ? getPanelFocusProgress(index, timePos) : 0;
+              return getPortalPanelDetail(index, stage, focusProgress);
+            }
+          }
+
+          return {
+            index: -1,
+            variant: '',
+            label: '',
+            stage: 'idle',
+            focusProgress: 0,
+          };
+        };
+
+        // Softer exit for the final cluster so testimonials does not balloon in
+        // scale/z and sit on top of projectIntake during the handoff.
+        const getPortalExitSettings = (index: number) => {
+          const isFinalCluster = index >= 4;
+          return {
+            exitScale: isFinalCluster
+              ? (isPortalCompact ? 1.14 : 1.22)
+              : portalSettings.exitScale,
+            exitZ: isFinalCluster
+              ? (isPortalCompact ? 70 : 150)
+              : portalSettings.exitZ,
+            exitYPercent: isFinalCluster
+              ? (isPortalCompact ? -5 : -7)
+              : portalSettings.exitYPercent,
+          };
+        };
+
+        const animatePortalPanel = (tl: gsap.core.Timeline, panel: HTMLDivElement, index: number) => {
+          const timing = getPortalPanelTiming(index);
+          const exitSettings = getPortalExitSettings(index);
+
+          tl.set(panel, {
+            autoAlpha: portalSettings.farAlpha,
+            yPercent: portalSettings.farYPercent,
+            z: portalSettings.farZ,
+            scale: portalSettings.farScale,
+            clipPath: 'inset(0% 0% 0% 0%)',
+            filter: portalFilter(portalSettings.farBrightness),
+            pointerEvents: 'none',
+          }, timing.enterAt)
+            .to(panel, {
+              autoAlpha: portalSettings.approachAlpha,
+              yPercent: portalSettings.approachYPercent,
+              z: portalSettings.approachZ,
+              scale: portalSettings.approachScale,
+              clipPath: 'inset(0% 0% 0% 0%)',
+              filter: portalFilter(portalSettings.approachBrightness),
+              duration: portalApproachDuration,
+              ease: 'power2.out',
+            }, timing.enterAt)
+            .to(panel, {
+              autoAlpha: 1,
+              yPercent: 0,
+              z: 0,
+              scale: 1,
+              clipPath: 'inset(0% 0% 0% 0%)',
+              filter: portalFilter(1),
+              duration: portalFocusDuration,
+              ease: 'power2.out',
+            }, timing.focusAt)
+            // Continuous focus drift: linear creep through the readable hold so
+            // the panel never stops dead between focus and exit. Hands off to the
+            // exit tween from the drifted state for a seamless transition.
+            .to(panel, {
+              z: portalFocusDriftZ,
+              scale: portalFocusDriftScale,
+              yPercent: portalFocusDriftYPercent,
+              duration: timing.exitAt - timing.focusStartAt,
+              ease: 'none',
+            }, timing.focusStartAt)
+            .set(panel, { pointerEvents: 'auto' }, timing.focusStartAt)
+            .set(panel, { pointerEvents: 'none' }, timing.exitAt)
+            .to(panel, {
+              autoAlpha: 0,
+              yPercent: exitSettings.exitYPercent,
+              z: exitSettings.exitZ,
+              scale: exitSettings.exitScale,
+              clipPath: 'inset(0% 0% 0% 0%)',
+              filter: portalFilter(portalSettings.exitBrightness),
+              duration: portalExitDuration,
+              ease: 'power2.inOut',
+              onStart: () => panel.classList.add('isAshExiting'),
+              onComplete: () => panel.classList.remove('isAshExiting'),
+              onReverseComplete: () => panel.classList.remove('isAshExiting'),
+            }, timing.exitAt);
+        };
+
+        const dispatchPortalPanelEvent = (eventName: string, detail: PortalPanelEventDetail) => {
+          window.dispatchEvent(new CustomEvent(eventName, { detail }));
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`[mogt] ${eventName}`, detail);
+          }
+        };
+
+        const dispatchLegacyPortalEvent = <T,>(eventName: string, detail?: T) => {
+          window.dispatchEvent(new CustomEvent(eventName, detail === undefined ? undefined : { detail }));
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`[mogt] ${eventName}`, detail ?? {});
+          }
+        };
+
+        const logPortalVisualState = (detail: PortalPanelEventDetail) => {
+          if (process.env.NODE_ENV !== 'development') return;
+          if (detail.stage !== 'approach' && detail.stage !== 'focus') return;
+
+          const panel = overlayPanelRefs.current[detail.index];
+          if (!panel) return;
+
+          const panelStyle = window.getComputedStyle(panel);
+          const child = panel.firstElementChild as HTMLElement | null;
+          const childStyle = child ? window.getComputedStyle(child) : null;
+
+          console.log('[mogt] portal visual state', {
+            variant: detail.variant,
+            stage: detail.stage,
+            opacity: panelStyle.opacity,
+            filter: panelStyle.filter,
+            transform: panelStyle.transform,
+            childVisible: childStyle
+              ? childStyle.display !== 'none' &&
+                childStyle.visibility !== 'hidden' &&
+                Number(childStyle.opacity || 1) > 0
+              : false,
+          });
+        };
+
+        let lastStageIndex = -2;
+        let lastStage: PortalPanelStage = 'idle';
+        let focusedPanelIndex = -1;
+        let lastFocusProgressIndex = -1;
+        let lastFocusProgressBucket = -1;
         let vaultBooted = false;
+        let lastBlueprintStep = -1;
+        let lastTrustSignal = -1;
 
         const onScrollUpdate = (self: ScrollTrigger) => {
           const timePos = self.animation?.time() ?? 0;
-          systemsLogoModelVisible = timePos >= sectionALogoAt && timePos <= sectionBEnterAt + 0.1;
-          if (!vaultBooted && timePos >= sectionBEnterAt + 0.12) {
-            vaultBooted = true;
-            window.dispatchEvent(new CustomEvent('vaultBoot'));
-          }
+          systemsLogoModelVisible =
+            timePos >= getPanelFocusStartAt(0) && timePos <= getPanelFocusEndAt(0);
           const progress = self.progress;
           if (sideProgressFillRef.current) {
             gsap.set(sideProgressFillRef.current, { scaleY: progress });
@@ -1409,21 +1655,65 @@ export default function CoinOrbitHero() {
             if (progress >= tickProgress) tick.classList.add('isActive');
             else tick.classList.remove('isActive');
           });
-          // Drive ProcessBlueprintSection step via scroll position (Section C =
-          // panel index 2, one panelStep after Section B).
-          const cPanelEnterAt = sectionBEnterAt + panelStep;
-          if (timePos >= cPanelEnterAt && timePos <= cPanelEnterAt + panelStep) {
-            const stepRaw = Math.max(0, Math.min(1, (timePos - cPanelEnterAt) / (panelStep * 0.9)));
-            const bpStep = Math.min(5, Math.floor(stepRaw * 6));
-            window.dispatchEvent(new CustomEvent('blueprintStep', { detail: bpStep }));
+
+          const activePortalPanel = getActivePortalPanel(timePos);
+          if (activePortalPanel.index !== lastStageIndex || activePortalPanel.stage !== lastStage) {
+            dispatchPortalPanelEvent('portalPanelStageChange', activePortalPanel);
+            logPortalVisualState(activePortalPanel);
+            lastStageIndex = activePortalPanel.index;
+            lastStage = activePortalPanel.stage;
           }
-          // Drive TrustEngineSection signal via scroll position (Section D =
-          // panel index 3, two panelSteps after Section B).
-          const dPanelEnterAt = sectionBEnterAt + 2 * panelStep;
-          if (timePos >= dPanelEnterAt) {
-            const sigRaw = Math.max(0, Math.min(1, (timePos - dPanelEnterAt) / (panelStep * 0.9)));
-            const sigIdx = Math.min(5, Math.floor(sigRaw * 6));
-            window.dispatchEvent(new CustomEvent('trustSignal', { detail: sigIdx }));
+
+          const nextFocusedPanelIndex = activePortalPanel.stage === 'focus' ? activePortalPanel.index : -1;
+          if (nextFocusedPanelIndex !== focusedPanelIndex) {
+            if (focusedPanelIndex >= 0) {
+              const exitStage = getPortalPanelStage(focusedPanelIndex, timePos);
+              dispatchPortalPanelEvent(
+                'portalPanelFocusEnd',
+                getPortalPanelDetail(focusedPanelIndex, exitStage, 1),
+              );
+            }
+
+            if (nextFocusedPanelIndex >= 0) {
+              dispatchPortalPanelEvent('portalPanelFocusStart', activePortalPanel);
+            }
+
+            focusedPanelIndex = nextFocusedPanelIndex;
+            lastFocusProgressIndex = -1;
+            lastFocusProgressBucket = -1;
+          }
+
+          if (activePortalPanel.stage === 'focus') {
+            const focusProgressBucket = Math.round(activePortalPanel.focusProgress * 50);
+            if (
+              activePortalPanel.index !== lastFocusProgressIndex ||
+              focusProgressBucket !== lastFocusProgressBucket
+            ) {
+              dispatchPortalPanelEvent('portalPanelFocusProgress', activePortalPanel);
+              lastFocusProgressIndex = activePortalPanel.index;
+              lastFocusProgressBucket = focusProgressBucket;
+            }
+
+            if (activePortalPanel.variant === 'selectedWork' && !vaultBooted) {
+              vaultBooted = true;
+              dispatchLegacyPortalEvent('vaultBoot');
+            }
+
+            if (activePortalPanel.variant === 'process') {
+              const bpStep = Math.min(5, Math.floor(activePortalPanel.focusProgress * 6));
+              if (bpStep !== lastBlueprintStep) {
+                lastBlueprintStep = bpStep;
+                dispatchLegacyPortalEvent('blueprintStep', bpStep);
+              }
+            }
+
+            if (activePortalPanel.variant === 'trustEngine') {
+              const sigIdx = Math.min(5, Math.floor(activePortalPanel.focusProgress * 6));
+              if (sigIdx !== lastTrustSignal) {
+                lastTrustSignal = sigIdx;
+                dispatchLegacyPortalEvent('trustSignal', sigIdx);
+              }
+            }
           }
         };
 
@@ -1473,60 +1763,27 @@ export default function CoinOrbitHero() {
               ease: 'power2.in',
             }, 1.05);
 
-          const overlayPanels = overlayPanelRefs.current;
-          // Panel 0 (Section A) reveals first and holds while its inner content
-          // staggers in; panels 1..n follow one panelStep apart.
-          const panelEnterAt = (index: number) =>
-            index === 0 ? sectionAEnterAt : sectionBEnterAt + (index - 1) * panelStep;
-
-          overlayPanels.forEach((panel, index) => {
-            // REVEAL — the panel un-clips from the bottom up while it rises into
-            // place, settles to full scale and the depth-blur clears. Each panel
-            // sits one z-index above the previous, so it uncovers the layer
-            // behind it instead of stacking below it.
-            tl.to(panel, {
-              autoAlpha: 1,
-              yPercent: 0,
-              scale: 1,
-              clipPath: 'inset(0% 0% 0% 0%)',
-              filter: 'blur(0px)',
-              duration: panelRevealDur,
-              ease: 'power2.out',
-            }, panelEnterAt(index));
-
-            // EXIT — fired at the *same* moment the next panel begins revealing,
-            // so the incoming layer slides up and over this one with no blank
-            // gap. The outgoing panel eases back/up and blurs, reading as depth
-            // receding behind the new layer rather than a section scrolling away.
-            if (index < overlayPanels.length - 1) {
-              tl.to(panel, {
-                autoAlpha: 0,
-                yPercent: isMobile ? -5 : -8,
-                scale: 1.03,
-                filter: isMobile ? 'blur(12px)' : 'blur(20px)',
-                duration: panelRevealDur,
-                ease: 'power2.in',
-              }, panelEnterAt(index + 1));
-            }
+          overlayPanelRefs.current.forEach((panel, index) => {
+            animatePortalPanel(tl, panel, index);
           });
 
-          // Stagger the Selected Work heading + cards in as Section B reveals.
+          // Child content reveals only inside the readable focus windows.
           tl.to('.vaultReveal', {
             autoAlpha: 1, y: 0, scale: 1, filter: 'blur(0px)',
             duration: 0.7, stagger: 0.1, ease: 'power3.out',
-          }, sectionBEnterAt + 0.12)
+          }, getPanelFocusStartAt(1) + 0.04)
             .to(systemsIndexLogoRef.current, {
               autoAlpha: 1, scale: 1, filter: 'blur(0px)', duration: 0.6, ease: 'power2.out',
-            }, sectionALogoAt)
+            }, getPanelFocusStartAt(0))
             .to(systemsIntroRef.current, {
               autoAlpha: 1, y: 0, filter: 'blur(0px)', duration: 0.6, ease: 'power3.out',
-            }, sectionAIntroAt)
+            }, getPanelFocusStartAt(0) + 0.08)
             .to(systemsIndustryMatrixRef.current, {
               autoAlpha: 1, y: 0, filter: 'blur(0px)', duration: 0.65, ease: 'power3.out',
-            }, sectionAMatrixAt)
+            }, getPanelFocusStartAt(0) + 0.34)
             .to(systemsCapabilitiesRef.current, {
               autoAlpha: 1, y: 0, filter: 'blur(0px)', duration: 0.6, ease: 'power2.out',
-            }, sectionACapabilitiesAt);
+            }, getPanelFocusStartAt(0) + 0.58);
         };
 
         const mm = gsap.matchMedia();
@@ -1542,12 +1799,15 @@ export default function CoinOrbitHero() {
             scrollTrigger: {
               trigger: sectionRef.current,
               start: 'top top',
-              end: () => '+=' + Math.round(window.innerHeight * 7.6),
-              scrub: 0.45,
+              end: () => '+=' + Math.round(window.innerHeight * 8.2),
+              // Higher scrub = the long cinematic timeline eases toward the wheel
+              // position instead of snapping in chunks. fastScrollEnd disabled so
+              // fast wheel flicks don't jump to the nearest finished state.
+              scrub: 0.85,
               pin: shouldPin,
               pinSpacing: true,
               anticipatePin: 1,
-              fastScrollEnd: true,
+              fastScrollEnd: false,
               invalidateOnRefresh: true,
               onUpdate: onScrollUpdate,
             },
@@ -1564,12 +1824,12 @@ export default function CoinOrbitHero() {
               start: 'top top',
               // Same panel sequence, lighter travel per panel so mobile does not
               // become a long scroll trap while still keeping the overlay reveal.
-              end: () => '+=' + Math.round(window.innerHeight * 5.6),
-              scrub: 0.25,
+              end: () => '+=' + Math.round(window.innerHeight * 6.1),
+              scrub: 0.35,
               pin: shouldPin,
               pinSpacing: true,
               anticipatePin: 1,
-              fastScrollEnd: true,
+              fastScrollEnd: false,
               invalidateOnRefresh: true,
               onUpdate: onScrollUpdate,
             },
@@ -1579,9 +1839,8 @@ export default function CoinOrbitHero() {
 
       }, sectionRef);
 
-      requestAnimationFrame(() => {
-        ScrollTrigger.refresh();
-      });
+      // ScrollTrigger.refresh is owned by SmoothScrollProvider's authoritative
+      // post-loader handler (mogt:loader-complete). No duplicate refresh here.
     }
 
     lastFrameTime = performance.now();
@@ -1781,122 +2040,131 @@ export default function CoinOrbitHero() {
       </div>
 
       <div className="overlayPanelStack" aria-label="Agency sections">
-        {OVERLAY_PANELS.map((panel, index) => (
-          <div
-            key={panel.label}
-            ref={(element) => setOverlayPanelRef(element, index)}
-            className="overlayPanel"
-            style={{ zIndex: 20 + index }}
-          >
-            {panel.variant === 'systemsIndex' ? (
-              <div className="systemsIndexPanel">
-                <div ref={systemsIndexLogoRef} className="systemsIndexLogo" aria-hidden="true" />
-                <div ref={systemsIntroRef} className="systemsIndexIntro">
-                  <span className="systemsIndexEyebrow">Section A / Operating Fields</span>
-                  <h2>Interface Systems Index</h2>
-                  <p>We build across product categories where reliability, workflows, and user behavior matter.</p>
-                </div>
-                <div ref={systemsIndustryMatrixRef} className="systemsIndustryMatrix">
-                  {SYSTEM_INDUSTRIES.map((industry) => (
-                    <button
-                      key={industry.id}
-                      type="button"
-                      className={`systemsIndustryItem ${activeIndustryId === industry.id && isIndustryOverlayOpen ? 'isActive' : ''}`}
-                      onMouseEnter={() => openIndustryOverlay(industry.id)}
-                      onFocus={() => openIndustryOverlay(industry.id)}
-                      onClick={() => openIndustryOverlay(industry.id)}
-                      aria-expanded={activeIndustryId === industry.id && isIndustryOverlayOpen}
-                    >
-                      <b>{industry.index}</b>
-                      {industry.label}
-                    </button>
-                  ))}
-                </div>
-                {activeIndustry && isIndustryOverlayOpen ? (
-                  <div
-                    ref={systemsInsightPanelRef}
-                    className="systemsInsightFloatingPanel"
-                    onMouseEnter={() => setIsIndustryOverlayOpen(true)}
-                    onMouseLeave={closeIndustryOverlay}
-                    role="dialog"
-                    aria-label={activeIndustry.title}
-                  >
-                    <button
-                      type="button"
-                      className="systemsInsightClose"
-                      onClick={closeIndustryOverlay}
-                      aria-label="Close industry details"
-                    >
-                      ×
-                    </button>
-                    <div className="systemsInsightHeader">
-                      <span>{activeIndustry.index} / 10</span>
-                      <h3>{activeIndustry.title}</h3>
-                      <p>{activeIndustry.summary}</p>
+        <div className="portalJourney">
+          <div className="portalMask" aria-hidden="true" />
+          <div className="portalDepth">
+            {OVERLAY_PANELS.map((panel, index) => (
+              <div
+                key={panel.label}
+                ref={(element) => setOverlayPanelRef(element, index)}
+                className="overlayPanel portalPanel"
+                style={{ zIndex: 20 + index }}
+              >
+                {/* Content layer — the full child component, kept visible through
+                    approach/focus/exit and governed only by the carrier transform. */}
+                <div className="portalContent">
+                {panel.variant === 'systemsIndex' ? (
+                  <div className="systemsIndexPanel">
+                    <div ref={systemsIndexLogoRef} className="systemsIndexLogo" aria-hidden="true" />
+                    <div ref={systemsIntroRef} className="systemsIndexIntro">
+                      <span className="systemsIndexEyebrow">Section A / Operating Fields</span>
+                      <h2>Interface Systems Index</h2>
+                      <p>We build across product categories where reliability, workflows, and user behavior matter.</p>
                     </div>
-                    <div className="systemsInsightGrid">
-                      <div className="systemsInsightBlock">
-                        <span className="systemsInsightLabel">Interface Types</span>
-                        <div className="systemsInsightTags">
-                          {activeIndustry.interfaceTypes.map((item) => (
-                            <span key={item}>{item}</span>
-                          ))}
+                    <div ref={systemsIndustryMatrixRef} className="systemsIndustryMatrix">
+                      {SYSTEM_INDUSTRIES.map((industry) => (
+                        <button
+                          key={industry.id}
+                          type="button"
+                          className={`systemsIndustryItem ${activeIndustryId === industry.id && isIndustryOverlayOpen ? 'isActive' : ''}`}
+                          onMouseEnter={() => openIndustryOverlay(industry.id)}
+                          onFocus={() => openIndustryOverlay(industry.id)}
+                          onClick={() => openIndustryOverlay(industry.id)}
+                          aria-expanded={activeIndustryId === industry.id && isIndustryOverlayOpen}
+                        >
+                          <b>{industry.index}</b>
+                          {industry.label}
+                        </button>
+                      ))}
+                    </div>
+                    {activeIndustry && isIndustryOverlayOpen ? (
+                      <div
+                        ref={systemsInsightPanelRef}
+                        className="systemsInsightFloatingPanel"
+                        onMouseEnter={() => setIsIndustryOverlayOpen(true)}
+                        onMouseLeave={closeIndustryOverlay}
+                        role="dialog"
+                        aria-label={activeIndustry.title}
+                      >
+                        <button
+                          type="button"
+                          className="systemsInsightClose"
+                          onClick={closeIndustryOverlay}
+                          aria-label="Close industry details"
+                        >
+                          ×
+                        </button>
+                        <div className="systemsInsightHeader">
+                          <span>{activeIndustry.index} / 10</span>
+                          <h3>{activeIndustry.title}</h3>
+                          <p>{activeIndustry.summary}</p>
                         </div>
-                      </div>
-                      <div className="systemsInsightBlock">
-                        <span className="systemsInsightLabel">Services</span>
-                        <div className="systemsInsightTags">
-                          {activeIndustry.services.map((item) => (
-                            <span key={item}>{item}</span>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="systemsInsightBlock systemsInsightMetrics">
-                        <span className="systemsInsightLabel">Design Pressure Map</span>
-                        {activeIndustry.metrics.map((metric) => (
-                          <div key={metric.label} className="systemsMetricRow">
-                            <div className="systemsMetricTop">
-                              <span>{metric.label}</span>
-                              <b>{metric.value}</b>
-                            </div>
-                            <div className="systemsMetricTrack">
-                              <span style={{ width: `${metric.bar}%` }} />
+                        <div className="systemsInsightGrid">
+                          <div className="systemsInsightBlock">
+                            <span className="systemsInsightLabel">Interface Types</span>
+                            <div className="systemsInsightTags">
+                              {activeIndustry.interfaceTypes.map((item) => (
+                                <span key={item}>{item}</span>
+                              ))}
                             </div>
                           </div>
-                        ))}
+                          <div className="systemsInsightBlock">
+                            <span className="systemsInsightLabel">Services</span>
+                            <div className="systemsInsightTags">
+                              {activeIndustry.services.map((item) => (
+                                <span key={item}>{item}</span>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="systemsInsightBlock systemsInsightMetrics">
+                            <span className="systemsInsightLabel">Design Pressure Map</span>
+                            {activeIndustry.metrics.map((metric) => (
+                              <div key={metric.label} className="systemsMetricRow">
+                                <div className="systemsMetricTop">
+                                  <span>{metric.label}</span>
+                                  <b>{metric.value}</b>
+                                </div>
+                                <div className="systemsMetricTrack">
+                                  <span style={{ width: `${metric.bar}%` }} />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="systemsInsightSignal">
+                            <span className="systemsInsightLabel">Signal</span>
+                            <p>{activeIndustry.signal}</p>
+                          </div>
+                        </div>
                       </div>
-                      <div className="systemsInsightSignal">
-                        <span className="systemsInsightLabel">Signal</span>
-                        <p>{activeIndustry.signal}</p>
-                      </div>
+                    ) : null}
+                    <div ref={systemsCapabilitiesRef} className="systemsCapabilities">
+                      {SYSTEM_CAPABILITIES.map((capability) => (
+                        <span key={capability}>{capability}</span>
+                      ))}
                     </div>
                   </div>
-                ) : null}
-                <div ref={systemsCapabilitiesRef} className="systemsCapabilities">
-                  {SYSTEM_CAPABILITIES.map((capability) => (
-                    <span key={capability}>{capability}</span>
-                  ))}
+                ) : panel.variant === 'selectedWork' ? (
+                  <SelectedWorkVault portalMode />
+                ) : panel.variant === 'process' ? (
+                  <ProcessBlueprintSection portalMode />
+                ) : panel.variant === 'trustEngine' ? (
+                  <TrustEngineSection portalMode />
+                ) : panel.variant === 'testimonials' ? (
+                  <TestimonialsSection portalMode />
+                ) : panel.variant === 'projectIntake' ? (
+                  <ProjectIntakeSection contactHref={CONTACT_HREF} />
+                ) : (
+                  <div className="overlayPanelContent">
+                    <span>{panel.title}</span>
+                    <h2>{panel.label}</h2>
+                    <p>{panel.text}</p>
+                  </div>
+                )}
                 </div>
               </div>
-            ) : panel.variant === 'selectedWork' ? (
-              <SelectedWorkVault />
-            ) : panel.variant === 'process' ? (
-              <ProcessBlueprintSection />
-            ) : panel.variant === 'trustEngine' ? (
-              <TrustEngineSection />
-            ) : panel.variant === 'testimonials' ? (
-              <TestimonialsSection />
-            ) : panel.variant === 'projectIntake' ? (
-              <ProjectIntakeSection contactHref={CONTACT_HREF} />
-            ) : (
-              <div className="overlayPanelContent">
-                <span>{panel.title}</span>
-                <h2>{panel.label}</h2>
-                <p>{panel.text}</p>
-              </div>
-            )}
+            ))}
           </div>
-        ))}
+        </div>
       </div>
 
       <div className="portfolioFrame" aria-hidden="true">
@@ -2522,6 +2790,75 @@ export default function CoinOrbitHero() {
           z-index: 8;
           pointer-events: none;
           overflow: hidden;
+          perspective: 1200px;
+          transform-style: preserve-3d;
+          isolation: isolate;
+        }
+
+        .portalJourney {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          overflow: hidden;
+          pointer-events: none;
+          /* Perspective lives on .overlayPanelStack only — a single 3D context
+             avoids nested-perspective compositing bugs (notably Safari). */
+          transform-style: preserve-3d;
+          isolation: isolate;
+        }
+
+        .portalJourney::before {
+          content: '';
+          position: absolute;
+          left: 50%;
+          top: 50%;
+          width: min(76vw, 920px);
+          height: min(76vw, 920px);
+          border-radius: 50%;
+          transform: translate(-50%, -50%);
+          background:
+            radial-gradient(circle, rgba(0, 0, 0, 0.12) 0 27%, rgba(255, 255, 255, 0.10) 36%, rgba(255, 255, 255, 0.032) 50%, transparent 70%),
+            radial-gradient(circle, transparent 0 32%, rgba(255, 255, 255, 0.05) 43%, transparent 62%);
+          box-shadow:
+            inset 0 0 74px rgba(255, 255, 255, 0.055),
+            0 0 92px rgba(255, 255, 255, 0.05);
+          opacity: 0.72;
+          z-index: 0;
+          pointer-events: none;
+        }
+
+        .portalJourney::after {
+          content: '';
+          position: absolute;
+          inset: -8%;
+          z-index: 2;
+          pointer-events: none;
+          opacity: 0.08;
+          mix-blend-mode: screen;
+          background-image:
+            url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.25' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.42'/%3E%3C/svg%3E"),
+            radial-gradient(circle at 50% 50%, transparent 0 34%, rgba(0, 0, 0, 0.34) 62%, rgba(0, 0, 0, 0.86) 100%);
+          background-size: 180px 180px, 100% 100%;
+        }
+
+        .portalMask {
+          position: absolute;
+          inset: 0;
+          z-index: 0;
+          pointer-events: none;
+          background:
+            radial-gradient(circle at 50% 50%, transparent 0 45%, rgba(0, 0, 0, 0.16) 66%, rgba(0, 0, 0, 0.58) 100%),
+            linear-gradient(180deg, rgba(0, 0, 0, 0.16), transparent 34%, transparent 66%, rgba(0, 0, 0, 0.22));
+        }
+
+        .portalDepth {
+          position: absolute;
+          inset: 0;
+          z-index: 1;
+          pointer-events: none;
+          transform-style: preserve-3d;
         }
 
         .overlayPanel {
@@ -2534,12 +2871,75 @@ export default function CoinOrbitHero() {
           justify-content: center;
           background: transparent;
           color: rgba(255, 255, 255, 0.94);
-          will-change: transform, opacity, filter, clip-path;
+          will-change: transform, opacity;
           pointer-events: none;
+        }
+
+        .portalPanel {
+          transform-origin: 50% 50%;
+          transform-style: preserve-3d;
+          backface-visibility: hidden;
+        }
+
+        /* Content layer — the full child component. It is governed only by the
+           carrier's opacity/scale/z, so it stays visible (faint + small) during
+           approach. No independent hiding, so there is never an empty portal frame. */
+        .portalContent {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 100%;
+          height: 100%;
         }
 
         .overlayPanel::before {
           content: none;
+        }
+
+        .portalPanel::after {
+          content: '';
+          position: absolute;
+          inset: -4%;
+          z-index: 20;
+          pointer-events: none;
+          opacity: 0;
+          transform: scale(0.96);
+          mix-blend-mode: screen;
+          background-image:
+            url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.45' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E"),
+            linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.22), transparent);
+          background-size: 160px 160px, 100% 100%;
+          -webkit-mask-image: radial-gradient(circle at 50% 46%, rgba(0, 0, 0, 0.95), rgba(0, 0, 0, 0.48) 42%, transparent 72%);
+          mask-image: radial-gradient(circle at 50% 46%, rgba(0, 0, 0, 0.95), rgba(0, 0, 0, 0.48) 42%, transparent 72%);
+        }
+
+        .portalPanel.isAshExiting::after {
+          animation: portalAshDrift 620ms ease-out both;
+        }
+
+        @keyframes portalAshDrift {
+          0% {
+            opacity: 0;
+            transform: scale(0.96) translateY(0);
+          }
+
+          34% {
+            opacity: 0.18;
+          }
+
+          100% {
+            opacity: 0;
+            transform: scale(1.08) translateY(-1.5%);
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .portalPanel.isAshExiting::after {
+            animation: none;
+            opacity: 0;
+          }
         }
 
         .overlayPanelContent {
@@ -2899,6 +3299,21 @@ export default function CoinOrbitHero() {
             height: 125vw;
             opacity: 0.72;
             filter: blur(22px);
+          }
+
+          .overlayPanelStack,
+          .portalJourney {
+            perspective: 900px;
+          }
+
+          .portalJourney::before {
+            width: 112vw;
+            height: 112vw;
+            opacity: 0.58;
+          }
+
+          .portalJourney::after {
+            opacity: 0.07;
           }
 
           .canvasContainer {
